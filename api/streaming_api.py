@@ -9,15 +9,22 @@ Application Flask de chat IA (SSE en streaming et réponse standard)
 
 from libs.lib__llm_models import llm_manager
 from flask import Flask, Response, request, jsonify
-from flask_cors import CORS
 from libs import lib__config as config
+from libs.lib__auth import require_auth, setup_cors, add_security_headers
 logger = config.logger
 DEFAULT_MODEL = config.DEFAULT_MODEL
 
 app = Flask(__name__)
-#CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+# Configuration CORS sécurisée
+setup_cors(app)
+
+# Ajouter les headers de sécurité à toutes les réponses
+@app.after_request
+def after_request(response):
+    return add_security_headers(response)
 
 @app.route('/stream_chat', methods=['POST'])
+@require_auth
 def stream_chat():
     """
     Route de chat en streaming.
@@ -38,6 +45,7 @@ def stream_chat():
 
 @app.route('/stream_chat_temp', methods=['POST'])
 @app.route('/chat', methods=['POST'])  # Alias pour rétrocompatibilité
+@require_auth
 def stream_chat_temp():
     """Route de chat standard (réponse unique).
     Accessible via /stream_chat_temp ou /chat (rétrocompatibilité).

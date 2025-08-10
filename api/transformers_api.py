@@ -6,9 +6,9 @@ API Flask (transformers_api)
 '''
 
 from flask import Flask, request, jsonify, Response
-from flask_cors import CORS
 from libs.lib__transformers import searchembedding
 from libs import lib__transformers
+from libs.lib__auth import require_auth, setup_cors, add_security_headers
 import os
 import uuid
 from libs import lib__sendmail
@@ -16,12 +16,19 @@ from libs import lib__config as config
 logger = config.logger
 
 app = Flask(__name__)
-#CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+# Configuration CORS sécurisée
+setup_cors(app)
 app.config['MAX_CONTENT_LENGTH'] = config.MAX_CONTENT_LENGTH
+
+# Ajouter les headers de sécurité
+@app.after_request
+def after_request(response):
+    return add_security_headers(response)
 PODCASTS_PATH = config.PODCASTS_PATH
 DEFAULT_MODEL = config.DEFAULT_MODEL
 
 @app.route('/sumup', methods=['POST'])
+@require_auth
 def sumup():
     """Résumé d’un fichier texte uploadé puis envoi par e-mail du résultat."""
     if 'file' not in request.files:
@@ -40,6 +47,7 @@ def sumup():
     return response
 
 @app.route('/transform', methods=['POST'])
+@require_auth
 def transform():
     """Transformation de texte selon une instruction (prompt) et envoi du fichier résultant par e-mail."""
     email = request.form.get('email')
@@ -53,6 +61,7 @@ def transform():
     return response
 
 @app.route('/podcast', methods=['POST'])
+@require_auth
 def podcast():
     """Génération audio (podcast) à partir d’un texte fourni puis envoi par e-mail du fichier audio."""
     text = request.form.get('text')
@@ -64,6 +73,7 @@ def podcast():
     return response
 
 @app.route('/whisper', methods=['POST'])
+@require_auth
 def whisper():
     """Transcription audio (Whisper): upload d’un fichier audio, conversion, transcription et envoi du .txt par e-mail."""
     if 'file' not in request.files:

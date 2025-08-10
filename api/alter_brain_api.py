@@ -8,7 +8,7 @@
 
 from libs import lib__embedded_context
 from flask import Flask, request, jsonify, Response
-from flask_cors import CORS
+from libs.lib__auth import require_auth, setup_cors, add_security_headers
 import os
 import time
 from zipfile import ZipFile
@@ -23,10 +23,17 @@ DEFAULT_MODEL = config.DEFAULT_MODEL
 
 base_folder = "datas/"
 app = Flask(__name__)
-#CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+# Configuration CORS sécurisée
+setup_cors(app)
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 
+# Ajouter les headers de sécurité
+@app.after_request
+def after_request(response):
+    return add_security_headers(response)
+
 @app.route('/buildindex', methods=['POST'])
+@require_auth
 def handle_file():
     """
     Construire un index de documents.
@@ -68,6 +75,7 @@ def handle_file():
     return(response)
 
 @app.route('/searchcontext', methods=['POST'])
+@require_auth
 def handle_req():
     """
     Rechercher du contexte pertinent dans un index existant.
@@ -89,6 +97,7 @@ def handle_req():
     return(response)
 
 @app.route('/streamtasks', methods=['POST'])
+@require_auth
 def handle_stream_tasks():
     """
     Exécuter des tâches LLM en streaming (texte envoyé progressivement).
@@ -120,6 +129,7 @@ def handle_stream_tasks():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/getvector', methods=['POST'])
+@require_auth  # Ajouter cette ligne
 def getvector():
     """
     Interroger un service Vectorize externe et récupérer des passages pertinents.

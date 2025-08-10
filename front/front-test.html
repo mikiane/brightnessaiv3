@@ -51,19 +51,19 @@
     .settings {
       display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
     }
-    .settings input[type="text"] {
+    .settings input[type="text"], .settings input[type="password"] {
       width: 380px; max-width: 60vw;
     }
-    .btn, button, input[type="text"], textarea, select {
+    .btn, button, input[type="text"], input[type="password"], textarea, select {
       border: 1px solid transparent; border-radius: var(--radius);
       background: var(--panel); color: var(--text);
       padding: 10px 12px; box-shadow: var(--shadow);
     }
-    input[type="text"], textarea, select {
+    input[type="text"], input[type="password"], textarea, select {
       border: 1px solid var(--muted); background: linear-gradient(180deg, var(--panel), var(--panel));
       outline: none; transition: border .15s ease;
     }
-    input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--accent) }
+    input[type="text"]:focus, input[type="password"]:focus, textarea:focus, select:focus { border-color: var(--accent) }
     .btn { cursor: pointer; display:inline-flex; align-items:center; gap:8px; justify-content:center; }
     .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: none }
     .btn.ghost { background: transparent; border: 1px solid var(--muted) }
@@ -135,6 +135,8 @@
       <div class="settings">
         <input id="apiUrl" type="text" placeholder="URL de l'API"
                value="https://dev.brightness-agency.com/chat" />
+        <input id="apiKey" type="password" placeholder="Clé API (optionnel)" 
+               title="Nécessaire si pas sur *.brightness.agency" />
         <input id="model" type="text" placeholder="Modèle (optionnel)" />
         <label class="switch" title="Inclure l'historique dans 'consigne' à chaque tour">
           <input id="withHistory" type="checkbox" checked />
@@ -183,6 +185,7 @@
       clear: document.getElementById('clear'),
       export: document.getElementById('export'),
       apiUrl: document.getElementById('apiUrl'),
+      apiKey: document.getElementById('apiKey'),
       consigne: document.getElementById('consigne'),
       system: document.getElementById('system'),
       model: document.getElementById('model'),
@@ -196,7 +199,7 @@
 
     // Restore persisted settings
     (function restore() {
-      const keys = ['apiUrl','consigne','system','model','withHistory','temperature'];
+      const keys = ['apiUrl','apiKey','consigne','system','model','withHistory','temperature'];
       keys.forEach(k => {
         const v = localStorage.getItem('chat_'+k);
         if (v == null) return;
@@ -207,7 +210,7 @@
     })();
 
     // Persist settings
-    ['apiUrl','consigne','system','model','temperature'].forEach(k => {
+    ['apiUrl','apiKey','consigne','system','model','temperature'].forEach(k => {
       els[k].addEventListener('change', () => localStorage.setItem('chat_'+k, els[k].value));
     });
     els.withHistory.addEventListener('change', () => localStorage.setItem('chat_withHistory', els.withHistory.checked ? '1' : '0'));
@@ -313,9 +316,19 @@
 
       let accumulated = '';
       try {
+        // Préparer les headers avec la clé API si fournie
+        const headers = { 
+          'Content-Type': 'application/json', 
+          'Accept': 'text/plain' 
+        };
+        const apiKey = els.apiKey.value.trim();
+        if (apiKey) {
+          headers['X-API-Key'] = apiKey;
+        }
+        
         const res = await fetch(apiUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'text/plain' },
+          headers: headers,
           body: JSON.stringify(payload),
           signal: abortController.signal,
           mode: 'cors',

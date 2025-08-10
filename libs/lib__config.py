@@ -41,6 +41,9 @@ XAI_KEY = os.environ.get("XAI_KEY")
 DEEPSEEK_KEY = os.environ.get("DEEPSEEK_KEY")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN")
+
+# Clé de sécurité pour les appels frontend
+FRONT_BRIGHTNESS_KEY = os.environ.get("FRONT_BRIGHTNESS_KEY")
 VECTORIZE_TOKEN = os.environ.get("VECTORIZE_TOKEN")
 # Ajouts Phase 4
 ACAST_API_KEY = os.environ.get("ACAST_API_KEY")
