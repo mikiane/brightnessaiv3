@@ -105,7 +105,9 @@ def setup_cors(app):
             "http://dev.brightness-agency.com",
             # localhost (dev)
             "http://localhost:*",
-            "http://127.0.0.1:*"
+            "http://127.0.0.1:*",
+            # origin 'null' pour les fronts ouverts en file:// (préflight seulement)
+            "null",
         ],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization", "X-API-Key"],
