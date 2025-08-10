@@ -60,10 +60,26 @@
   };
 
   async function loadConfig(){
+    // Déterminer le fichier de configuration: ?index=nom -> nom.json, sinon chat-config.json
+    const params = new URLSearchParams(window.location.search);
+    const idx = params.get('index');
+    let cfgFile = 'chat-config.json';
+    if (idx) {
+      // Autoriser uniquement lettres/chiffres/underscore/tiret
+      const safe = idx.match(/^[a-zA-Z0-9_-]+(\.json)?$/) ? idx : null;
+      if (safe) cfgFile = safe.endsWith('.json') ? safe : `${safe}.json`;
+    }
     try{
-      const res = await fetch('chat-config.json', {cache:'no-store'});
-      if(res.ok){ cfg = {...cfg, ...(await res.json())}; }
-    }catch(e){}
+      let res = await fetch(cfgFile, { cache: 'no-store' });
+      if(!res.ok) throw new Error('config not found');
+      cfg = { ...cfg, ...(await res.json()) };
+    }catch(e){
+      // Fallback sur la config par défaut
+      try{
+        const res2 = await fetch('chat-config.json', { cache: 'no-store' });
+        if(res2.ok) cfg = { ...cfg, ...(await res2.json()) };
+      }catch(_e){}
+    }
     if(cfg.title) els.title.textContent = cfg.title;
     if(cfg.logoUrl) els.logo.src = cfg.logoUrl; else els.logo.classList.add('hidden');
     if(!cfg.apiUrl) els.status.textContent = 'Configuration manquante: apiUrl';
