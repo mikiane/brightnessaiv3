@@ -90,32 +90,31 @@ def setup_cors(app):
     Permet les requêtes depuis brightness.agency, brightness-agency.com et localhost (dev)
     """
     from flask_cors import CORS
-    
-    # Configuration CORS pour les domaines autorisés
+
+    # Regex compatibles Flask-CORS pour couvrir tous les sous-domaines
+    origin_regexes = [
+        re.compile(r"^https?://([\w\-]+\.)*brightness\.agency(:\d+)?$"),
+        re.compile(r"^https?://([\w\-]+\.)*brightness\-agency\.com(:\d+)?$"),
+        re.compile(r"^http://localhost(:\d+)?$"),
+        re.compile(r"^http://127\.0\.0\.1(:\d+)?$"),
+    ]
+
+    # Domaines explicites utilisés
+    explicit_origins = [
+        "https://ai.brightness.agency",
+        "https://dev.brightness-agency.com",
+        "null",  # pour file:// en dev
+    ]
+
     cors_config = {
-        "origins": [
-            # brightness.agency (prod)
-            "https://*.brightness.agency",
-            "http://*.brightness.agency",
-            # brightness-agency.com (prod et env dev)
-            "https://*.brightness-agency.com",
-            "http://*.brightness-agency.com",
-            # sous-domaine spécifique explicitement (au cas où le wildcard ne serait pas supporté côté proxy)
-            "https://dev.brightness-agency.com",
-            "http://dev.brightness-agency.com",
-            # localhost (dev)
-            "http://localhost:*",
-            "http://127.0.0.1:*",
-            # origin 'null' pour les fronts ouverts en file:// (préflight seulement)
-            "null",
-        ],
+        "origins": origin_regexes + explicit_origins,
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization", "X-API-Key"],
-        "supports_credentials": True
+        "supports_credentials": True,
     }
-    
+
     CORS(app, resources={r"/*": cors_config})
-    logger.info("CORS configured for brightness.agency and brightness-agency.com domains")
+    logger.info("CORS configured (Flask) for brightness.agency, brightness-agency.com, localhost and explicit dev domains")
 
 
 def add_security_headers(response):
