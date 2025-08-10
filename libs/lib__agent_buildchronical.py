@@ -21,10 +21,10 @@ from urllib.parse import unquote
 from queue import Queue
 from pydub import AudioSegment
 # Import optionnel de moviepy
-try:
-    from moviepy.editor import *  # noqa: F401,F403
-except Exception:
-    pass
+# try:
+#     from moviepy.editor import *  # noqa: F401,F403
+# except Exception:
+#    pass
 from datetime import date
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition

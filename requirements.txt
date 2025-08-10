@@ -19,7 +19,7 @@ langchain-core
 langchain-openai
 markdownify
 matplotlib
-moviepy
+# moviepy  # Non utilisé - peut être réactivé si besoin de traitement vidéo
 num2words
 numpy
 openai

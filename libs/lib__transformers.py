@@ -32,7 +32,10 @@ except Exception:
     elevenlabs_set_api_key = None
 from urllib.parse import unquote
 from queue import Queue
-from moviepy.editor import *
+# try:
+#     from moviepy.editor import *
+# except ImportError:
+#    logger.warning("moviepy non installé - fonctionnalités vidéo désactivées")
 from datetime import date
 from bs4 import BeautifulSoup
 import json
