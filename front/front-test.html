@@ -229,29 +229,21 @@
     }
 
     function renderMessage(role, content, streaming=false) {
-      const wrap = $('.msg');
-      const avatar = $('.role '+ (role==='assistant' ? '.assistant' : '.user'));
-      if (role === 'assistant') avatar.classList.add('assistant'); else avatar.classList.add('user');
-      avatar.textContent = role === 'assistant' ? 'AI' : 'Vous';
-      const body = $('.div');
-      body.className = 'content';
-      body.textContent = content || '';
+      // Créer le conteneur principal
+      const container = $('div', {class: 'msg'});
+      
+      // Créer l'avatar/role
+      const roleEl = $('div', {class: 'role ' + (role==='assistant' ? 'assistant' : 'user')});
+      roleEl.textContent = role === 'assistant' ? 'AI' : 'Vous';
 
-      const container = document.createElement('div');
-      container.className = 'msg';
-      const roleEl = document.createElement('div');
-      roleEl.className = 'role ' + (role==='assistant' ? 'assistant':'user');
-      roleEl.textContent = role==='assistant' ? 'AI' : 'Vous';
-
-      const contentEl = document.createElement('div');
-      const textEl = document.createElement('div');
-      textEl.className = 'content';
+      // Créer le conteneur de contenu
+      const contentEl = $('div');
+      const textEl = $('div', {class: 'content'});
       textEl.textContent = content || '';
       contentEl.appendChild(textEl);
 
-      const tools = document.createElement('div');
-      tools.className = 'tools';
-      const copyBtn = Object.assign(document.createElement('button'), { className: 'btn ghost mini', textContent: 'Copier' });
+      const tools = $('div', {class: 'tools'});
+      const copyBtn = $('button', {class: 'btn ghost mini'}, 'Copier');
       copyBtn.addEventListener('click', async () => {
         await navigator.clipboard.writeText(textEl.textContent);
         copyBtn.textContent = 'Copié ✓';
@@ -260,7 +252,7 @@
       tools.appendChild(copyBtn);
 
       if (role === 'assistant') {
-        const regenBtn = Object.assign(document.createElement('button'), { className: 'btn ghost mini', textContent: 'Régénérer' });
+        const regenBtn = $('button', {class: 'btn ghost mini'}, 'Régénérer');
         regenBtn.addEventListener('click', () => {
           const lastUser = [...history].reverse().find(m => m.role === 'user');
           if (lastUser) sendMessage(lastUser.content, true);
