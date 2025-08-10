@@ -16,7 +16,12 @@
     .role{width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff}
     .role.user{background:#3A3F46}
     .role.assistant{background:var(--accent)}
-    .content{white-space:pre-wrap}
+    .content{max-width:100%}
+    .content.user{white-space:pre-wrap}
+    .content.md{white-space:normal}
+    .content.md pre{background:#0f1115; border:1px solid var(--muted); padding:10px; overflow:auto; border-radius:6px}
+    .content.md code{background:#0f1115; padding:2px 4px; border-radius:4px}
+    .content.md ul, .content.md ol{margin:8px 0 8px 22px}
     .composer{padding:10px 14px; border-top:1px solid var(--muted); background:var(--panel)}
     .row{display:flex; gap:10px; align-items:center}
     textarea{flex:1; resize:vertical; min-height:60px; max-height:40vh; border:1px solid var(--muted); background:var(--panel); color:var(--text); border-radius:var(--radius); padding:10px; box-shadow:var(--shadow)}
@@ -24,7 +29,17 @@
     .btn.primary{background:linear-gradient(135deg, var(--accent), #b32f23); border:none; color:#fff}
     .hidden{display:none}
     .hint{color:var(--subtle); font-size:12px}
+    /* Bloc source (contexte) */
+    .source{border:1px solid var(--muted); border-radius:8px; margin-top:8px; overflow:hidden; background:rgba(255,255,255,.02)}
+    .source-toggle{padding:3px 6px; font-size:11px; color:var(--subtle); cursor:pointer; user-select:none; background:transparent}
+    .source-toggle:hover{color:#C2C7CE}
+    .source-panel{display:none; padding:8px 10px; color:var(--subtle); font-size:12px; line-height:1.35}
+    .source.open .source-panel{display:block}
+    .sec-title{font-weight:600; font-size:11px; color:#80868b; text-transform:uppercase; letter-spacing:.3px}
+    .chunk{border:1px dashed #2a2d33; border-radius:6px; padding:6px; margin-top:6px; background:transparent}
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -45,116 +60,68 @@
 </div>
 <script>
 (function(){
-  const els = {
-    logo: document.getElementById('logo'),
-    title: document.getElementById('title'),
-    chat: document.getElementById('chat'),
-    input: document.getElementById('input'),
-    send: document.getElementById('send'),
-    status: document.getElementById('status'),
-  };
+  const els = { logo:document.getElementById('logo'), title:document.getElementById('title'), chat:document.getElementById('chat'), input:document.getElementById('input'), send:document.getElementById('send'), status:document.getElementById('status') };
 
-  let cfg = {
-    title:'Chat RAG', logoUrl:'', apiUrl:'', searchUrl:'', apiKey:'',
-    brain_id:'', model:'', temperature:0, withHistory:true, system:'', consigne:''
-  };
+  let cfg = { title:'Chat RAG', logoUrl:'', apiUrl:'', searchUrl:'', apiKey:'', brain_id:'', model:'', temperature:0, withHistory:true, system:'', consigne:'', activate_source:false };
 
   async function loadConfig(){
-    // Déterminer le fichier de configuration: ?index=nom -> nom.json, sinon chat-config.json
-    const params = new URLSearchParams(window.location.search);
-    const idx = params.get('index');
-    let cfgFile = 'chat-config.json';
-    if (idx) {
-      // Autoriser uniquement lettres/chiffres/underscore/tiret
-      const safe = idx.match(/^[a-zA-Z0-9_-]+(\.json)?$/) ? idx : null;
-      if (safe) cfgFile = safe.endsWith('.json') ? safe : `${safe}.json`;
-    }
-    try{
-      let res = await fetch(cfgFile, { cache: 'no-store' });
-      if(!res.ok) throw new Error('config not found');
-      cfg = { ...cfg, ...(await res.json()) };
-    }catch(e){
-      // Fallback sur la config par défaut
-      try{
-        const res2 = await fetch('chat-config.json', { cache: 'no-store' });
-        if(res2.ok) cfg = { ...cfg, ...(await res2.json()) };
-      }catch(_e){}
-    }
-    if(cfg.title) els.title.textContent = cfg.title;
-    if(cfg.logoUrl) els.logo.src = cfg.logoUrl; else els.logo.classList.add('hidden');
-    if(!cfg.apiUrl) els.status.textContent = 'Configuration manquante: apiUrl';
-    if(!cfg.searchUrl) els.status.textContent = 'Configuration manquante: searchUrl';
-    if(!cfg.brain_id) els.status.textContent = 'Configuration manquante: brain_id';
+    const params=new URLSearchParams(window.location.search); const idx=params.get('index'); let cfgFile='chat-config.json';
+    if(idx){ const safe=idx.match(/^[a-zA-Z0-9_-]+(\.json)?$/)?idx:null; if(safe) cfgFile=safe.endsWith('.json')?safe:`${safe}.json`; }
+    try{ const res=await fetch(cfgFile,{cache:'no-store'}); if(!res.ok) throw 0; cfg={...cfg,...(await res.json())}; }catch(e){ try{ const r2=await fetch('chat-config.json',{cache:'no-store'}); if(r2.ok) cfg={...cfg,...(await r2.json())}; }catch(_){} }
+    if(cfg.title) els.title.textContent=cfg.title; if(cfg.logoUrl) els.logo.src=cfg.logoUrl; else els.logo.classList.add('hidden');
+    if(!cfg.apiUrl) els.status.textContent='Configuration manquante: apiUrl'; if(!cfg.searchUrl) els.status.textContent='Configuration manquante: searchUrl'; if(!cfg.brain_id) els.status.textContent='Configuration manquante: brain_id';
   }
 
-  function atBottom(c,t=40){ return c.scrollHeight - c.scrollTop - c.clientHeight < t; }
-  function autoScroll(){ els.chat.scrollTop = els.chat.scrollHeight; }
+  function atBottom(c,t=40){ return c.scrollHeight-c.scrollTop-c.clientHeight<t; }
+  function autoScroll(){ els.chat.scrollTop=els.chat.scrollHeight; }
   function $(tag, attrs={}, text=''){ const n=document.createElement(tag); Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v)); if(text) n.textContent=text; return n; }
   function renderMessage(role, content){
     const container=$('div',{class:'msg'});
-    const roleEl=$('div',{class:'role '+(role==='assistant'?'assistant':'user')});
-    roleEl.textContent=role==='assistant'?'AI':'Vous';
-    const textEl=$('div',{class:'content'}); textEl.textContent=content||'';
-    container.appendChild(roleEl); container.appendChild(textEl);
-    els.chat.appendChild(container); if(atBottom(els.chat)) autoScroll();
-    return { textEl };
+    const roleEl=$('div',{class:'role '+(role==='assistant'?'assistant':'user')}); roleEl.textContent=role==='assistant'?'AI':'Vous';
+    const textEl=$('div',{class:'content '+(role==='assistant'?'md':'user')}); if(role==='assistant') textEl.innerHTML=''; else textEl.textContent=content||'';
+    container.appendChild(roleEl); container.appendChild(textEl); els.chat.appendChild(container); if(atBottom(els.chat)) autoScroll();
+    return { textEl, container };
+  }
+
+  function createSourceBlock(contextText, histText){
+    const wrap=$('div',{class:'source'}); const toggle=$('div',{class:'source-toggle'},'source'); const panel=$('div',{class:'source-panel'});
+    const histTitle=$('div',{class:'sec-title'},'Historique'); const hist=$('div',{class:'chunk'}); hist.textContent=(histText||'(vide)'); panel.appendChild(histTitle); panel.appendChild(hist);
+    const parts=Array.isArray(contextText)?contextText: typeof contextText==='string'?contextText.split(/\n\s*\n+/):[String(contextText||'')];
+    const exTitle=$('div',{class:'sec-title'},`Extraits (${parts.length})`); panel.appendChild(exTitle);
+    parts.forEach(p=>{ const c=$('div',{class:'chunk'}); c.textContent=p.trim(); panel.appendChild(c); });
+    toggle.addEventListener('click',()=>wrap.classList.toggle('open')); wrap.appendChild(toggle); wrap.appendChild(panel); return wrap;
   }
 
   const history=[];
+  function buildConsigne(base, hist){ if(!cfg.withHistory||hist.length===0) return base||''; const last=hist.slice(-4).map(m=>`- ${m.role}: ${m.content}`).join('\n'); return `${base||''}\n\nContexte conversationnel:\n${last}`.trim(); }
 
-  function buildConsigne(base, hist){
-    if(!cfg.withHistory || hist.length===0) return base||'';
-    const last=hist.slice(-4).map(m=>`- ${m.role}: ${m.content}`).join('\n');
-    return `${base||''}\n\nContexte conversationnel:\n${last}`.trim();
-  }
-
-  async function fetchContext(question){
-    const fd = new FormData();
-    fd.append('request', question);
-    fd.append('brain_id', cfg.brain_id);
-    if(cfg.model) fd.append('model', cfg.model);
-    const headers = {};
-    if(cfg.apiKey) headers['X-API-Key']=cfg.apiKey;
-    const res = await fetch(cfg.searchUrl, { method:'POST', body: fd, headers });
-    if(!res.ok) throw new Error('searchcontext HTTP '+res.status);
-    const data = await res.json();
-    const answer = Array.isArray(data) ? data[0]?.answer : data?.[0]?.answer;
-    return answer || '';
-  }
+  async function fetchContext(q){ const fd=new FormData(); fd.append('request',q); fd.append('brain_id',cfg.brain_id); if(cfg.model) fd.append('model',cfg.model); const headers={}; if(cfg.apiKey) headers['X-API-Key']=cfg.apiKey; const res=await fetch(cfg.searchUrl,{method:'POST',body:fd,headers}); if(!res.ok) throw new Error('searchcontext HTTP '+res.status); const data=await res.json(); const ans=Array.isArray(data)?data[0]?.answer:data?.[0]?.answer; return ans||''; }
 
   async function sendToLLM(question, extraContext){
-    const headers={'Content-Type':'application/json','Accept':'text/plain'};
-    if(cfg.apiKey) headers['X-API-Key']=cfg.apiKey;
-    const contextualConsigne = `${buildConsigne(cfg.consigne, history)}\n\nVoici un contexte à prendre en compte <<<Contexte>>>\n${extraContext}`;
-    const payload={
-      consigne: encodeURIComponent(contextualConsigne),
-      texte: encodeURIComponent(question),
-      system: cfg.system||'',
-      model: cfg.model||undefined,
-      temperature: String(Number(cfg.temperature||0).toFixed(2)),
-    };
-    const res = await fetch(cfg.apiUrl, { method:'POST', headers, body: JSON.stringify(payload), mode:'cors', credentials:'omit' });
-    if(!res.ok || !res.body) throw new Error('LLM HTTP '+res.status);
-    return res.body.getReader();
+    const headers={'Content-Type':'application/json','Accept':'text/plain'}; if(cfg.apiKey) headers['X-API-Key']=cfg.apiKey;
+    const contextualConsigne=`${buildConsigne(cfg.consigne,history)}\n\nVoici un contexte à prendre en compte <<<Contexte>>>\n${extraContext}`;
+    const payload={ consigne:encodeURIComponent(contextualConsigne), texte:encodeURIComponent(question), system:cfg.system||'', model:cfg.model||undefined, temperature:String(Number(cfg.temperature||0).toFixed(2)) };
+    const res=await fetch(cfg.apiUrl,{method:'POST',headers,body:JSON.stringify(payload),mode:'cors',credentials:'omit'}); if(!res.ok||!res.body) throw new Error('LLM HTTP '+res.status); return res.body.getReader();
   }
 
   async function handleSend(){
-    const q = els.input.value.trim(); if(!q) return;
-    els.input.value=''; els.input.focus();
+    const q=els.input.value.trim(); if(!q) return; els.input.value=''; els.input.focus();
     renderMessage('user', q); history.push({role:'user', content:q});
-    const { textEl } = renderMessage('assistant', '');
-    els.status.textContent='';
+    const { textEl, container }=renderMessage('assistant',''); els.status.textContent='';
     try{
-      const context = await fetchContext(q);
-      const reader = await sendToLLM(q, context);
-      const decoder = new TextDecoder(); let done=false; let acc='';
-      while(!done){ const chunk = await reader.read(); done = chunk.done; if(chunk.value){ const t=decoder.decode(chunk.value,{stream:true}); acc+=t; textEl.textContent=acc; autoScroll(); } }
-      history.push({role:'assistant', content: textEl.textContent});
-    }catch(e){ textEl.textContent = (textEl.textContent||'')+`\n[Erreur] ${e.message||e}`; }
+      const context=await fetchContext(q);
+      const reader=await sendToLLM(q, context); const decoder=new TextDecoder(); let done=false; let acc='';
+      while(!done){ const chunk=await reader.read(); done=chunk.done; if(chunk.value){ const t=decoder.decode(chunk.value,{stream:true}); acc+=t; const html=DOMPurify.sanitize(marked.parse(acc)); textEl.innerHTML=html; autoScroll(); } }
+      history.push({role:'assistant', content:textEl.textContent});
+      if (cfg.activate_source) {
+        const histText=history.slice(-5,-1).map(m=>`- ${m.role}: ${m.content}`).join('\n');
+        container.appendChild(createSourceBlock(context, histText));
+      }
+    }catch(e){ textEl.textContent=(textEl.textContent||'')+`\n[Erreur] ${e.message||e}`; }
   }
 
   els.send.addEventListener('click', handleSend);
-  els.input.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); handleSend(); }});
+  els.input.addEventListener('keydown', e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); handleSend(); } });
 
   loadConfig();
 })();
