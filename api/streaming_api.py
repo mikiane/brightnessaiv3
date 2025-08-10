@@ -37,8 +37,11 @@ def stream_chat():
     return Response(llm_manager.generate_chat(consigne, texte, system='', model=model, temperature=0), content_type='text/plain')
 
 @app.route('/stream_chat_temp', methods=['POST'])
+@app.route('/chat', methods=['POST'])  # Alias pour rétrocompatibilité
 def stream_chat_temp():
-    """Route de chat standard (réponse unique)."""
+    """Route de chat standard (réponse unique).
+    Accessible via /stream_chat_temp ou /chat (rétrocompatibilité).
+    """
     data = request.get_json()
     consigne = data.get('consigne')
     texte = data.get('texte')
