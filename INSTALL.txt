@@ -1,0 +1,22 @@
+INSTALLATION GUIDE
+
+
+## Environment setup 
+
+pip install virtualenv
+virtualenv nom_de_votre_environnement
+source nom_de_votre_environnement/bin/activate
+deactivate (to quit the environment)
+
+
+
+## Environment INSTALLATION
+pip install -r requirements.txt
+
+
+
+## Upgrading the environment
+pip install pip-upgrader
+pip-upgrade
+
+

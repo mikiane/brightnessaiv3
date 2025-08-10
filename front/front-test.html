@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Chat Streaming — Flask API Client</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --panel: #121318;
+      --muted: #2a2d36;
+      --text: #e7e9ee;
+      --subtle: #a8adbd;
+      --accent: #6aa2ff;
+      --accent-2: #8bd4ff;
+      --danger: #ff6b6b;
+      --ok: #37d399;
+      --radius: 14px;
+      --shadow: 0 10px 35px rgba(0,0,0,.35);
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f6f7fb;
+        --panel: #ffffff;
+        --muted: #eef0f6;
+        --text: #11131a;
+        --subtle: #475069;
+        --accent: #3b82f6;
+        --accent-2: #06b6d4;
+        --danger: #ef4444;
+        --ok: #10b981;
+        --shadow: 0 10px 35px rgba(0,0,0,.08);
+      }
+    }
+    * { box-sizing: border-box }
+    html, body { height: 100% }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 16px/1.45 Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      display: grid; grid-template-rows: auto 1fr auto; gap: 12px;
+    }
+    header, footer {
+      padding: 14px 16px; position: sticky; top: 0; z-index: 5;
+      background: linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,0));
+    }
+    .bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .title { font-weight: 700; letter-spacing: .2px; display:flex; align-items:center; gap:10px }
+    .badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--muted); color: var(--subtle) }
+    .settings {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    }
+    .settings input[type="text"] {
+      width: 380px; max-width: 60vw;
+    }
+    .btn, button, input[type="text"], textarea, select {
+      border: 1px solid transparent; border-radius: var(--radius);
+      background: var(--panel); color: var(--text);
+      padding: 10px 12px; box-shadow: var(--shadow);
+    }
+    input[type="text"], textarea, select {
+      border: 1px solid var(--muted); background: linear-gradient(180deg, var(--panel), var(--panel));
+      outline: none; transition: border .15s ease;
+    }
+    input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--accent) }
+    .btn { cursor: pointer; display:inline-flex; align-items:center; gap:8px; justify-content:center; }
+    .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: none }
+    .btn.ghost { background: transparent; border: 1px solid var(--muted) }
+    .btn.danger { background: var(--danger); color:#fff; border: none }
+    .btn:disabled { opacity:.6; cursor:not-allowed }
+    main {
+      display: grid; grid-template-columns: 1fr; gap: 12px; padding: 0 16px 8px;
+    }
+    .chat {
+      height: calc(100vh - 220px);
+      max-height: calc(100vh - 220px);
+      overflow: auto; scroll-behavior: smooth;
+      padding: 12px; border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow);
+    }
+    .msg {
+      display: grid; grid-template-columns: 42px 1fr; gap: 12px;
+      padding: 14px; border-radius: 12px; border: 1px solid var(--muted); background: rgba(255,255,255,.02);
+    }
+    .msg + .msg { margin-top: 10px }
+    .role {
+      width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
+      background: var(--muted); color: var(--text);
+    }
+    .role.user { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: #fff }
+    .role.assistant { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #00132b }
+    .content { white-space: pre-wrap; word-wrap: break-word }
+    .tools { display:flex; gap:8px; justify-content:flex-end; margin-top:6px }
+    .composer {
+      display: grid; grid-template-columns: 1fr auto; gap: 10px;
+      padding: 10px; border-top: 1px solid var(--muted); background: linear-gradient(180deg, rgba(0,0,0,.04), rgba(0,0,0,0));
+    }
+    .stack { display: grid; gap: 8px }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+    textarea {
+      width: 100%; min-height: 90px; max-height: 40vh; resize: vertical;
+    }
+    .grid {
+      display:grid; grid-template-columns: repeat(3, minmax(180px,1fr)); gap:8px;
+    }
+    .hint { color: var(--subtle); font-size: 12px }
+    .switch { display:inline-flex; align-items:center; gap:8px; cursor:pointer }
+    .switch input { width: 0; height: 0; appearance:none }
+    .switch .knob {
+      width: 42px; height: 26px; border-radius: 999px; background: var(--muted); position: relative; transition: .15s;
+    }
+    .switch .knob::after {
+      content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition: .15s;
+    }
+    .switch input:checked + .knob { background: linear-gradient(135deg, var(--accent), var(--ok)) }
+    .switch input:checked + .knob::after { transform: translateX(16px) }
+    .sep { height:1px; background: var(--muted); margin: 6px 0 }
+    .mini { font-size: 12px; color: var(--subtle) }
+    .hidden { display:none !important }
+    .right { justify-content: flex-end }
+    .grow { flex: 1 }
+    .nowrap { white-space: nowrap }
+    .fade { opacity: .7 }
+    .kbd { font: 12px/1.1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,"Liberation Mono","Courier New",monospace; background: var(--muted); padding: 2px 6px; border-radius: 6px }
+    a { color: var(--accent) }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <div class="title">
+        <span>💬 Chat Streaming</span>
+        <span class="badge">Flask client</span>
+      </div>
+      <div class="settings">
+        <input id="apiUrl" type="text" placeholder="URL de l'API"
+               value="https://dev.brightness-agency.com/chat" />
+        <input id="model" type="text" placeholder="Modèle (optionnel)" />
+        <label class="switch" title="Inclure l'historique dans 'consigne' à chaque tour">
+          <input id="withHistory" type="checkbox" checked />
+          <span class="knob"></span>
+          <span class="mini">Contexte ↻</span>
+        </label>
+        <button id="clear" class="btn ghost" title="Effacer l'historique">Effacer</button>
+        <button id="export" class="btn ghost" title="Exporter">Exporter</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="chat" class="chat" aria-live="polite"></section>
+  </main>
+
+  <footer>
+    <div class="composer">
+      <div class="stack">
+        <div class="grid">
+          <input id="system" type="text" placeholder="System (optionnel, ex: Tu es un assistant utile)" />
+          <input id="consigne" type="text" placeholder="Consigne (ex: Réponds de façon concise)" />
+          <div class="row">
+            <label for="temperature" class="mini">Température</label>
+            <input id="temperature" type="range" min="0" max="1" step="0.01" value="0.2" />
+            <span id="tempVal" class="mini">0.20</span>
+          </div>
+        </div>
+        <textarea id="input" placeholder="Écrivez votre message… (Entrée pour envoyer, Maj+Entrée pour un saut de ligne)"></textarea>
+        <div class="row right">
+          <span class="hint grow">Astuce : <span class="kbd">Entrée</span> pour envoyer · <span class="kbd">Maj</span>+<span class="kbd">Entrée</span> pour nouvelle ligne</span>
+          <button id="stop" class="btn danger hidden">Stop</button>
+          <button id="send" class="btn primary">Envoyer</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // --- State ---
+    const els = {
+      chat: document.getElementById('chat'),
+      input: document.getElementById('input'),
+      send: document.getElementById('send'),
+      stop: document.getElementById('stop'),
+      clear: document.getElementById('clear'),
+      export: document.getElementById('export'),
+      apiUrl: document.getElementById('apiUrl'),
+      consigne: document.getElementById('consigne'),
+      system: document.getElementById('system'),
+      model: document.getElementById('model'),
+      withHistory: document.getElementById('withHistory'),
+      temperature: document.getElementById('temperature'),
+      tempVal: document.getElementById('tempVal'),
+    };
+
+    let history = []; // {role:'user'|'assistant', content:string}
+    let abortController = null;
+
+    // Restore persisted settings
+    (function restore() {
+      const keys = ['apiUrl','consigne','system','model','withHistory','temperature'];
+      keys.forEach(k => {
+        const v = localStorage.getItem('chat_'+k);
+        if (v == null) return;
+        if (k === 'withHistory') els[k].checked = v === '1';
+        else if (k === 'temperature') { els[k].value = v; els.tempVal.textContent = Number(v).toFixed(2); }
+        else els[k].value = v;
+      });
+    })();
+
+    // Persist settings
+    ['apiUrl','consigne','system','model','temperature'].forEach(k => {
+      els[k].addEventListener('change', () => localStorage.setItem('chat_'+k, els[k].value));
+    });
+    els.withHistory.addEventListener('change', () => localStorage.setItem('chat_withHistory', els.withHistory.checked ? '1' : '0'));
+    els.temperature.addEventListener('input', () => { els.tempVal.textContent = Number(els.temperature.value).toFixed(2); });
+
+    // Utilities
+    const $ = (tag, attrs={}, text='') => {
+      const n = document.createElement(tag);
+      Object.entries(attrs).forEach(([k,v]) => n.setAttribute(k,v));
+      if (text) n.textContent = text;
+      return n;
+    };
+
+    function atBottom(container, threshold=40) {
+      return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+    }
+    function autoScroll() {
+      els.chat.scrollTop = els.chat.scrollHeight;
+    }
+
+    function renderMessage(role, content, streaming=false) {
+      const wrap = $('.msg');
+      const avatar = $('.role '+ (role==='assistant' ? '.assistant' : '.user'));
+      if (role === 'assistant') avatar.classList.add('assistant'); else avatar.classList.add('user');
+      avatar.textContent = role === 'assistant' ? 'AI' : 'Vous';
+      const body = $('.div');
+      body.className = 'content';
+      body.textContent = content || '';
+
+      const container = document.createElement('div');
+      container.className = 'msg';
+      const roleEl = document.createElement('div');
+      roleEl.className = 'role ' + (role==='assistant' ? 'assistant':'user');
+      roleEl.textContent = role==='assistant' ? 'AI' : 'Vous';
+
+      const contentEl = document.createElement('div');
+      const textEl = document.createElement('div');
+      textEl.className = 'content';
+      textEl.textContent = content || '';
+      contentEl.appendChild(textEl);
+
+      const tools = document.createElement('div');
+      tools.className = 'tools';
+      const copyBtn = Object.assign(document.createElement('button'), { className: 'btn ghost mini', textContent: 'Copier' });
+      copyBtn.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(textEl.textContent);
+        copyBtn.textContent = 'Copié ✓';
+        setTimeout(() => copyBtn.textContent = 'Copier', 1200);
+      });
+      tools.appendChild(copyBtn);
+
+      if (role === 'assistant') {
+        const regenBtn = Object.assign(document.createElement('button'), { className: 'btn ghost mini', textContent: 'Régénérer' });
+        regenBtn.addEventListener('click', () => {
+          const lastUser = [...history].reverse().find(m => m.role === 'user');
+          if (lastUser) sendMessage(lastUser.content, true);
+        });
+        tools.appendChild(regenBtn);
+      }
+      contentEl.appendChild(tools);
+
+      container.appendChild(roleEl);
+      container.appendChild(contentEl);
+
+      els.chat.appendChild(container);
+      if (streaming) container.dataset.streaming = '1';
+      return {container, textEl};
+    }
+
+    function buildConsigne(baseConsigne, hist) {
+      if (!els.withHistory.checked || hist.length === 0) return baseConsigne || '';
+      const ctx = hist.slice(-8) // dernières 8 entrées pour rester compact
+        .map(m => (m.role === 'user' ? 'Utilisateur: ' : 'Assistant: ') + m.content).join('\n');
+      return `${baseConsigne || ''}\n\n[Contexte de conversation]\n${ctx}`;
+    }
+
+    async function sendMessage(text, isRegen=false) {
+      const apiUrl = els.apiUrl.value.trim();
+      if (!apiUrl) { alert("Renseigne l'URL de l'API."); return; }
+
+      const system = els.system.value.trim();
+      const consigne = els.consigne.value.trim();
+      const model = els.model.value.trim();
+      const temperature = Number(els.temperature.value || 0).toFixed(2); // send as string "0.20"
+
+      if (!isRegen) {
+        if (!text || !text.trim()) return;
+        const { textEl } = renderMessage('user', text);
+        history.push({ role: 'user', content: text });
+      }
+
+      // Prepare assistant placeholder
+      const { textEl: outEl } = renderMessage('assistant', '', true);
+      const shouldAuto = atBottom(els.chat);
+      if (shouldAuto) autoScroll();
+
+      // Prepare payload (encode consigne/texte because the server unquotes them)
+      const effectiveConsigne = buildConsigne(consigne, history);
+      const payload = {
+        consigne: encodeURIComponent(effectiveConsigne),
+        texte: encodeURIComponent(text),
+        system,
+        model: model || undefined,
+        temperature: temperature, // Flask converts comma->dot so dot is fine
+      };
+
+      // Streaming fetch
+      abortController = new AbortController();
+      els.send.disabled = true;
+      els.stop.classList.remove('hidden');
+
+      let accumulated = '';
+      try {
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'text/plain' },
+          body: JSON.stringify(payload),
+          signal: abortController.signal,
+          mode: 'cors',
+          credentials: 'omit',
+        });
+
+        if (!res.ok || !res.body) {
+          throw new Error(`HTTP ${res.status} – ${res.statusText}`);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder(); // streaming decoder handles UTF-8 boundary splits
+        let done, value;
+        while (({done, value} = await reader.read()) && !done) {
+          const chunk = decoder.decode(value, { stream: true });
+          accumulated += chunk;
+          outEl.textContent = accumulated;
+          if (shouldAuto) autoScroll();
+        }
+        // Flush any remaining decoded bytes
+        accumulated += decoder.decode();
+        outEl.textContent = accumulated;
+
+        history.push({ role: 'assistant', content: accumulated });
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          outEl.textContent += '\n\n[⏹ Génération interrompue]';
+        } else {
+          outEl.textContent = `❌ Erreur: ${err.message}\nVérifie l'URL de l'API et le CORS côté serveur.`;
+        }
+      } finally {
+        els.send.disabled = false;
+        els.stop.classList.add('hidden');
+        abortController = null;
+        if (shouldAuto) autoScroll();
+      }
+    }
+
+    // Events
+    els.send.addEventListener('click', () => {
+      const text = els.input.value;
+      els.input.value = '';
+      sendMessage(text);
+      els.input.focus();
+    });
+
+    els.stop.addEventListener('click', () => {
+      if (abortController) abortController.abort();
+    });
+
+    els.clear.addEventListener('click', () => {
+      if (!confirm('Effacer toute la conversation ?')) return;
+      history = [];
+      els.chat.innerHTML = '';
+    });
+
+    function download(filename, text) {
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+    }
+
+    els.export.addEventListener('click', () => {
+      if (history.length === 0) { alert('Aucune conversation à exporter.'); return; }
+      const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+      // JSON
+      download(`chat-${stamp}.json`, JSON.stringify({
+        apiUrl: els.apiUrl.value,
+        model: els.model.value || null,
+        system: els.system.value || null,
+        consigne: els.consigne.value || null,
+        temperature: Number(els.temperature.value),
+        withHistory: els.withHistory.checked,
+        history
+      }, null, 2));
+      // Markdown
+      const md = history.map(m =>
+        `**${m.role === 'user' ? 'Vous' : 'Assistant'}**\n\n${m.content}`
+      ).join('\n\n---\n\n');
+      download(`chat-${stamp}.md`, md);
+    });
+
+    // Keyboard: Enter to send, Shift+Enter newline
+    els.input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        els.send.click();
+      }
+    });
+
+    // Initial hint
+    const hello = `Bonjour 👋
+- Renseigne si besoin *System*, *Consigne*, *Modèle* et *Température*.
+- Le bouton "Contexte ↻" inclut les derniers échanges dans la consigne.
+- Clique "Envoyer" pour lancer une requête streaming vers l'API Flask.`;
+    renderMessage('assistant', hello);
+  </script>
+</body>
+</html>

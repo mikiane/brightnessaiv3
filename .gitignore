@@ -1,0 +1,15 @@
+
+.env
+.DS_Store
+__pycache__/
+files/*
+datas/*
+datas/**/
+img/*
+models/*
+tests/*
+tmp/*
+jsclient/*
+brightnessaiv2
+docs/*
+
