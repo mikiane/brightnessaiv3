@@ -71,21 +71,20 @@
     model: '',
     temperature: 0,
     withHistory: true,
+    system: '',
+    consigne: '',
   };
 
-  // Try loading config from local file; fallback to defaults
   async function loadConfig(){
     try{
       const res = await fetch('chat-config.json', {cache:'no-store'});
       if(res.ok){ cfg = {...cfg, ...(await res.json())}; }
-    }catch(e){ /* ignore, keep defaults */ }
-    // Apply to UI
+    }catch(e){ /* ignore */ }
     if(cfg.title) els.title.textContent = cfg.title;
     if(cfg.logoUrl) els.logo.src = cfg.logoUrl; else els.logo.classList.add('hidden');
-    if(!cfg.apiUrl){ els.status.textContent = 'Configuration manquante: apiUrl'; }
+    if(!cfg.apiUrl) els.status.textContent = 'Configuration manquante: apiUrl';
   }
 
-  // Utilities
   function atBottom(container, threshold=40){
     return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
   }
@@ -96,7 +95,7 @@
     if(text) n.textContent = text;
     return n;
   }
-  function renderMessage(role, content, streaming=false){
+  function renderMessage(role, content){
     const container = $('div', {class:'msg'});
     const roleEl = $('div', {class: 'role ' + (role==='assistant'?'assistant':'user')});
     roleEl.textContent = role==='assistant' ? 'AI' : 'Vous';
@@ -108,16 +107,16 @@
     container.appendChild(contentEl);
     els.chat.appendChild(container);
     if(atBottom(els.chat)) autoScroll();
-    return { textEl, container };
+    return { textEl };
   }
 
-  const history = []; // {role, content}
+  const history = [];
   let abortController = null;
 
-  function buildConsigne(consigne, hist){
-    if(!cfg.withHistory || hist.length===0) return consigne || '';
+  function buildConsigne(base, hist){
+    if(!cfg.withHistory || hist.length===0) return base || '';
     const lastTurns = hist.slice(-4).map(m=>`- ${m.role}: ${m.content}`).join('\n');
-    return `${consigne || ''}\n\nContexte:\n${lastTurns}`.trim();
+    return `${base || ''}\n\nContexte:\n${lastTurns}`.trim();
   }
 
   async function sendMessage(){
@@ -126,18 +125,20 @@
     if(!apiUrl){ els.status.textContent = 'apiUrl non défini'; return; }
     if(!text || !text.trim()) return;
 
-    const { textEl: userEl } = renderMessage('user', text);
+    els.input.value = '';
+    els.input.focus();
+
+    renderMessage('user', text);
     history.push({role:'user', content:text});
 
-    els.input.value = '';
-    const { textEl: outEl } = renderMessage('assistant', '', true);
+    const { textEl: outEl } = renderMessage('assistant', '');
 
     const payload = {
-      consigne: encodeURIComponent(buildConsigne('', history)),
+      consigne: encodeURIComponent(buildConsigne(cfg.consigne, history)),
       texte: encodeURIComponent(text),
-      system: '',
+      system: cfg.system || '',
       model: cfg.model || undefined,
-      temperature: String((cfg.temperature ?? 0).toFixed ? cfg.temperature.toFixed(2) : Number(cfg.temperature||0).toFixed(2)),
+      temperature: String(Number(cfg.temperature||0).toFixed(2)),
     };
 
     abortController = new AbortController();
@@ -172,16 +173,10 @@
     }
   }
 
-  function stop(){ if(abortController){ abortController.abort(); els.stop.classList.add('hidden'); els.send.disabled=false; } }
-
-  // Events
   els.send.addEventListener('click', sendMessage);
-  els.stop.addEventListener('click', stop);
-  els.input.addEventListener('keydown', (e)=>{
-    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
-  });
+  els.stop.addEventListener('click', ()=>{ if(abortController){ abortController.abort(); els.stop.classList.add('hidden'); els.send.disabled=false; }});
+  els.input.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } });
 
-  // Init
   loadConfig();
 })();
 </script>
