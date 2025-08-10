@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Définition du chemin de l'environnement virtuel
-VENV_PATH="/home/michel/brightnessaiv2/brightnessaiv2"
+VENV_PATH="/home/michel/brightnessaiv3/venv"
 
 # Définition du chemin vers requirements.txt
 REQUIREMENTS_PATH="requirements.txt"
