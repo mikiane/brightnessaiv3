@@ -103,6 +103,7 @@ def setup_cors(app):
     explicit_origins = [
         "https://ai.brightness.agency",
         "https://dev.brightness-agency.com",
+        "http://localhost:8081",
         "null",  # pour file:// en dev
     ]
 

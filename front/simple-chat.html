@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat</title>
+  <style>
+    :root{
+      --bg:#0B0B0C; --panel:#15161A; --muted:#24262B; --text:#E8E9EC; --subtle:#9AA0A6; --accent:#D73C2C;
+      --radius:10px; --shadow: 0 4px 20px rgba(0,0,0,.35);
+    }
+    html,body{height:100%}
+    body{margin:0; background:var(--bg); color:var(--text); font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"}
+    .wrap{display:flex; flex-direction:column; min-height:100vh}
+    header{display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--muted); background:var(--panel); position:sticky; top:0; z-index:10}
+    header img{height:28px; width:auto; display:block}
+    header .title{font-weight:600}
+    main{flex:1; display:flex; flex-direction:column; max-width:900px; margin:0 auto; width:100%}
+    .chat{flex:1; padding:14px; overflow:auto}
+    .msg{display:flex; gap:10px; margin:10px 0}
+    .role{flex:0 0 auto; width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff}
+    .role.user{background:#3A3F46}
+    .role.assistant{background:var(--accent)}
+    .content{white-space:pre-wrap}
+    .composer{padding:10px 14px; border-top:1px solid var(--muted); background:var(--panel)}
+    .row{display:flex; gap:10px; align-items:center}
+    textarea{flex:1; resize:vertical; min-height:60px; max-height:40vh; border:1px solid var(--muted); background:var(--panel); color:var(--text); border-radius:var(--radius); padding:10px; box-shadow:var(--shadow)}
+    .btn{border:1px solid var(--muted); background:var(--panel); color:var(--text); padding:10px 12px; border-radius:var(--radius); cursor:pointer}
+    .btn.primary{background:linear-gradient(135deg, var(--accent), #b32f23); border:none; color:#fff}
+    .btn.ghost{background:transparent}
+    .btn:disabled{opacity:.6; cursor:not-allowed}
+    .hint{color:var(--subtle); font-size:12px}
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img id="logo" alt="logo" />
+    <div class="title" id="title">Chat</div>
+  </header>
+  <main>
+    <section id="chat" class="chat" aria-live="polite"></section>
+  </main>
+  <footer class="composer">
+    <div class="row">
+      <textarea id="input" placeholder="Écrivez votre message… (Entrée = envoyer, Maj+Entrée = nouvelle ligne)"></textarea>
+      <button id="stop" class="btn ghost hidden">Stop</button>
+      <button id="send" class="btn primary">Envoyer</button>
+    </div>
+    <div class="row"><span class="hint" id="status"></span></div>
+  </footer>
+</div>
+<script>
+(function(){
+  const els = {
+    logo: document.getElementById('logo'),
+    title: document.getElementById('title'),
+    chat: document.getElementById('chat'),
+    input: document.getElementById('input'),
+    send: document.getElementById('send'),
+    stop: document.getElementById('stop'),
+    status: document.getElementById('status'),
+  };
+
+  let cfg = {
+    title: 'Chat',
+    logoUrl: '',
+    apiUrl: '',
+    apiKey: '',
+    model: '',
+    temperature: 0,
+    withHistory: true,
+  };
+
+  // Try loading config from local file; fallback to defaults
+  async function loadConfig(){
+    try{
+      const res = await fetch('chat-config.json', {cache:'no-store'});
+      if(res.ok){ cfg = {...cfg, ...(await res.json())}; }
+    }catch(e){ /* ignore, keep defaults */ }
+    // Apply to UI
+    if(cfg.title) els.title.textContent = cfg.title;
+    if(cfg.logoUrl) els.logo.src = cfg.logoUrl; else els.logo.classList.add('hidden');
+    if(!cfg.apiUrl){ els.status.textContent = 'Configuration manquante: apiUrl'; }
+  }
+
+  // Utilities
+  function atBottom(container, threshold=40){
+    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+  }
+  function autoScroll(){ els.chat.scrollTop = els.chat.scrollHeight; }
+  function $(tag, attrs={}, text=''){
+    const n = document.createElement(tag);
+    Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v));
+    if(text) n.textContent = text;
+    return n;
+  }
+  function renderMessage(role, content, streaming=false){
+    const container = $('div', {class:'msg'});
+    const roleEl = $('div', {class: 'role ' + (role==='assistant'?'assistant':'user')});
+    roleEl.textContent = role==='assistant' ? 'AI' : 'Vous';
+    const contentEl = $('div');
+    const textEl = $('div', {class:'content'});
+    textEl.textContent = content || '';
+    contentEl.appendChild(textEl);
+    container.appendChild(roleEl);
+    container.appendChild(contentEl);
+    els.chat.appendChild(container);
+    if(atBottom(els.chat)) autoScroll();
+    return { textEl, container };
+  }
+
+  const history = []; // {role, content}
+  let abortController = null;
+
+  function buildConsigne(consigne, hist){
+    if(!cfg.withHistory || hist.length===0) return consigne || '';
+    const lastTurns = hist.slice(-4).map(m=>`- ${m.role}: ${m.content}`).join('\n');
+    return `${consigne || ''}\n\nContexte:\n${lastTurns}`.trim();
+  }
+
+  async function sendMessage(){
+    const text = els.input.value;
+    const apiUrl = cfg.apiUrl.trim();
+    if(!apiUrl){ els.status.textContent = 'apiUrl non défini'; return; }
+    if(!text || !text.trim()) return;
+
+    const { textEl: userEl } = renderMessage('user', text);
+    history.push({role:'user', content:text});
+
+    els.input.value = '';
+    const { textEl: outEl } = renderMessage('assistant', '', true);
+
+    const payload = {
+      consigne: encodeURIComponent(buildConsigne('', history)),
+      texte: encodeURIComponent(text),
+      system: '',
+      model: cfg.model || undefined,
+      temperature: String((cfg.temperature ?? 0).toFixed ? cfg.temperature.toFixed(2) : Number(cfg.temperature||0).toFixed(2)),
+    };
+
+    abortController = new AbortController();
+    els.send.disabled = true; els.stop.classList.remove('hidden'); els.status.textContent='';
+
+    try{
+      const headers = { 'Content-Type':'application/json', 'Accept':'text/plain' };
+      if(cfg.apiKey) headers['X-API-Key'] = cfg.apiKey;
+
+      const res = await fetch(apiUrl, {
+        method:'POST', headers, body: JSON.stringify(payload),
+        signal: abortController.signal, mode:'cors', credentials:'omit'
+      });
+      if(!res.ok || !res.body){ throw new Error(`HTTP ${res.status}`); }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let done=false; let accumulated='';
+      while(!done){
+        const chunk = await reader.read();
+        done = chunk.done;
+        if(chunk.value){
+          const text = decoder.decode(chunk.value, { stream:true });
+          accumulated += text; outEl.textContent = accumulated; autoScroll();
+        }
+      }
+      history.push({role:'assistant', content: accumulated});
+    }catch(err){
+      outEl.textContent = (outEl.textContent||'') + `\n[Erreur] ${err.message||err}`;
+    }finally{
+      els.send.disabled = false; els.stop.classList.add('hidden'); abortController = null;
+    }
+  }
+
+  function stop(){ if(abortController){ abortController.abort(); els.stop.classList.add('hidden'); els.send.disabled=false; } }
+
+  // Events
+  els.send.addEventListener('click', sendMessage);
+  els.stop.addEventListener('click', stop);
+  els.input.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+  });
+
+  // Init
+  loadConfig();
+})();
+</script>
+</body>
+</html>
