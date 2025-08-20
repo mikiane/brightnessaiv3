@@ -28,7 +28,7 @@ cd "$REPO"
 
 #podcast GEO
 echo "[$(date +'%F %T')] DÉMARRAGE generatepodcast.sh (GEO)" >> "$LOG_FILE"
-"$PYTHON" -m agent.auto_genpodcast_geo >> "$LOG_FILE" 2>&1
+"$PYTHON" -m agent.auto_genpodcast_geo_2 >> "$LOG_FILE" 2>&1
 echo "[$(date +'%F %T')] FIN generatepodcast.sh (GEO)" >> "$LOG_FILE"
 
 
