@@ -39,6 +39,7 @@ requests
 requests-oauthlib
 scikit-learn
 sendgrid
+sib_api_v3_sdk
 transformers
 tweepy
 elevenlabs==0.2.26

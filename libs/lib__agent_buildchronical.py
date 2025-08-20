@@ -38,6 +38,8 @@ from num2words import num2words
 import re
 from openai import OpenAI
 import xml.etree.ElementTree as ET
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException as BrevoApiException
 
 # Import centralized configuration
 from libs import lib__config as config
@@ -49,6 +51,7 @@ model = DEFAULT_MODEL
 ELEVENLABS_API_KEY = config.ELEVENLABS_API_KEY
 PODCASTS_PATH = config.PODCASTS_PATH
 SENDGRID_KEY = config.SENDGRID_KEY
+BREVO_API_KEY = config.BREVO_API_KEY
 
 
 
@@ -242,57 +245,90 @@ def mailaudio(title, audio, text, email):
 def mail_nofile(title, text, email):
     ##################################################################
     """
-    Fonction pour envoyer un e-mail sans pièce jointe via SendGrid.
+    Fonction pour envoyer un e-mail sans pièce jointe via Brevo (transactionnel).
+    Ancien envoi SendGrid conservé en commentaire pour référence.
     """
     ##################################################################
 
-    # Création de l'objet Mail
-    message = Mail(
-        from_email='contact@brightness.fr',
-        to_emails=email,
+    # --- Ancien envoi SendGrid ---
+    # message = Mail(
+    #     from_email='contact@brightness.fr',
+    #     to_emails=email,
+    #     subject=title,
+    #     plain_text_content=text)
+    # message.add_bcc('contact@mikiane.com')
+    # try:
+    #     sg = SendGridAPIClient(SENDGRID_KEY)
+    #     response = sg.send(message)
+    #     logger.info(f"Email envoyé: {email}")
+    #     logger.debug(f"Sendgrid status: {response.status_code}")
+    # except Exception as e:
+    #     logger.error(f"Erreur envoi email: {e}")
+
+    # --- Nouvel envoi via Brevo TransactionalEmailsApi ---
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key['api-key'] = BREVO_API_KEY
+    api_client = sib_api_v3_sdk.ApiClient(configuration)
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(api_client)
+
+    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+        to=[{"email": email}],
+        bcc=[{"email": "contact@mikiane.com"}],
+        sender={"name": "Brightness.ai", "email": "contact@brightness.fr"},
         subject=title,
-        plain_text_content=text)
-    
-    # Ajout des destinataires en BCC
-    # for email in destinataires:
-    message.add_bcc('contact@mikiane.com')
-        
-    # Tentative d'envoi de l'e-mail via SendGrid
+        text_content=text
+    )
+
     try:
-        sg = SendGridAPIClient(SENDGRID_KEY)
-        response = sg.send(message)
-        logger.info(f"Email envoyé: {email}")
-        logger.debug(f"Sendgrid status: {response.status_code}")
-    except Exception as e:
-        logger.error(f"Erreur envoi email: {e}")
+        api_response = api_instance.send_transac_email(send_smtp_email)
+        logger.info(f"Email (texte) envoyé via Brevo: {email}")
+        logger.debug(f"Brevo response: {api_response}")
+    except BrevoApiException as e:
+        logger.error(f"Erreur envoi email (Brevo - texte): {e}")
 
 
 def mail_html(title, text, email):
     ################################################################## 
     """
-    Fonction pour envoyer un e-mail sans pièce jointe via SendGrid.
+    Fonction pour envoyer un e-mail HTML via Brevo (transactionnel).
+    Ancien envoi SendGrid conservé en commentaire pour référence.
     """
     ##################################################################
 
-    # Création de l'objet Mail
-    message = Mail(
-        from_email='contact@brightness.fr',
-        to_emails=email,
+    # --- Ancien envoi SendGrid ---
+    # message = Mail(
+    #     from_email='contact@brightness.fr',
+    #     to_emails=email,
+    #     subject=title,
+    #     html_content=text)
+    # message.add_bcc('contact@mikiane.com')
+    # try:
+    #     sg = SendGridAPIClient(SENDGRID_KEY)
+    #     response = sg.send(message)
+    #     logger.info(f"Email HTML envoyé: {email}")
+    #     logger.debug(f"Sendgrid status: {response.status_code}")
+    # except Exception as e:
+    #     logger.error(f"Erreur envoi email HTML: {e}")
+
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key['api-key'] = BREVO_API_KEY
+    api_client = sib_api_v3_sdk.ApiClient(configuration)
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(api_client)
+
+    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+        to=[{"email": email}],
+        bcc=[{"email": "contact@mikiane.com"}],
+        sender={"name": "Brightness.ai", "email": "contact@brightness.fr"},
         subject=title,
-        html_content=text)
-    
-    # Ajout des destinataires en BCC
-    # for email in destinataires:
-    message.add_bcc('contact@mikiane.com')
-        
-    # Tentative d'envoi de l'e-mail via SendGrid
+        html_content=text
+    )
+
     try:
-        sg = SendGridAPIClient(SENDGRID_KEY)
-        response = sg.send(message)
-        logger.info(f"Email HTML envoyé: {email}")
-        logger.debug(f"Sendgrid status: {response.status_code}")
-    except Exception as e:
-        logger.error(f"Erreur envoi email HTML: {e}")
+        api_response = api_instance.send_transac_email(send_smtp_email)
+        logger.info(f"Email (HTML) envoyé via Brevo: {email}")
+        logger.debug(f"Brevo response: {api_response}")
+    except BrevoApiException as e:
+        logger.error(f"Erreur envoi email (Brevo - HTML): {e}")
 
 
 

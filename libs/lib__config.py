@@ -37,6 +37,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY") or os.environ.get("OPEN_AI_KEY
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
 SENDGRID_KEY = os.environ.get("SENDGRID_KEY")
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
 XAI_KEY = os.environ.get("XAI_KEY")
 DEEPSEEK_KEY = os.environ.get("DEEPSEEK_KEY")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -58,7 +59,7 @@ AWS_SECRET_KEY = os.environ.get("AWS_SECRET_KEY")
 REGION_NAME = os.environ.get("REGION_NAME", "eu-west-1")
 
 # Modèles par défaut
-DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", "gpt-4")
+DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", "gpt-4o")
 DEFAULT_EMBEDDING_MODEL = os.environ.get("DEFAULT_EMBEDDING_MODEL", "text-embedding-ada-002")
 MODEL_URL = os.environ.get("MODEL_URL", "")
 
