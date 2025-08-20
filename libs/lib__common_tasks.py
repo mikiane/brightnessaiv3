@@ -182,9 +182,9 @@ def build_watch_command(
     Aucun article datant de moins de {hours_ago} heures ne doit être oublié.
     
     La liste doit comprendre les informations suivantes :
-    - Titre de l'article
-    - Description / résumé de l'article dans la langue originelle de l'article
-    - Pour chaque article générer un tweet en {language} en utilisant le titre, la description et en citant l'url associée. Utiliser un ton neutre.
+    - Titre de l'article (traduit en {language})
+    - Description / résumé de l'article (traduit en {language})
+    - Pour chaque article ajouter l'url associée. 
     
     Répondre directement en générant la liste. Ne converse pas. Ne conclue pas.
     Ne pas générer d'introduction ni de conclusion, juste la liste.
