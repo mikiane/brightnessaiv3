@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 HOME=/home/michel
 REPO="/home/michel/brightnessaiv3"
-PYTHON="/home/michel/brightnessaiv3/myenv/bin/python"
+PYTHON="/home/michel/myenv/bin/python"
 LANG=fr_FR.UTF-8
 LC_ALL=fr_FR.UTF-8
 
