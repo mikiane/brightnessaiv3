@@ -7,7 +7,7 @@ echo "🚀 Déploiement de BrightnessAI v3 sur Google Cloud"
 
 # Variables
 PROJECT_DIR="/home/michel/brightnessaiv3"
-VENV_PATH="$PROJECT_DIR/venv"
+VENV_PATH="/home/michel/myenv"
 REPO_URL="https://github.com/mikiane/brightnessaiv3.git"
 
 # Étape 1: Cloner le repository
@@ -23,17 +23,17 @@ else
     cd $PROJECT_DIR
 fi
 
-# Étape 2: Créer l'environnement virtuel
-echo "🐍 Étape 2: Création de l'environnement virtuel..."
+# Étape 2: Créer l'environnement virtuel (global) si nécessaire
+echo "🐍 Étape 2: Vérification/Création de l'environnement virtuel global à $VENV_PATH..."
 if [ ! -d "$VENV_PATH" ]; then
     python3 -m venv "$VENV_PATH"
-    echo "Environnement virtuel créé."
+    echo "Environnement virtuel global créé à $VENV_PATH."
 else
-    echo "L'environnement virtuel existe déjà."
+    echo "L'environnement virtuel global existe déjà."
 fi
 
-# Étape 3: Activer l'environnement et installer les dépendances
-echo "📚 Étape 3: Installation des dépendances..."
+# Étape 3: Activer l'environnement global et installer les dépendances du projet
+echo "📚 Étape 3: Installation des dépendances dans $VENV_PATH..."
 source "$VENV_PATH/bin/activate"
 pip install --upgrade pip
 pip install -r requirements.txt
