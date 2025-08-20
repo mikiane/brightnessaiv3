@@ -7,7 +7,7 @@ LC_ALL=fr_FR.UTF-8
 PYTHONPATH="/home/michel/brightnessaiv3"
 
 #TLJ
-30 4 * * * sh /home/michel/brightnessaiv2/generatepodcast.sh
+30 4 * * * sh /home/michel/brightnessaiv3/generatepodcast.sh
 
 #TT LES SEMAINES BCKP LIBRECHAT
 0 3 * * 1 BACKUP_BASE_DIR=/home/michel/brightness-chat/LibreChat/bckp /usr/bin/env bash /home/michel/brightness-chat/LibreChat/ba>
