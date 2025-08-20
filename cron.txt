@@ -1,0 +1,32 @@
+SHELL=/bin/bash
+HOME=/home/michel
+REPO="/home/michel/brightnessaiv3"
+PYTHON="/home/michel/brightnessaiv3/venv/bin/python"
+LANG=fr_FR.UTF-8
+LC_ALL=fr_FR.UTF-8
+
+#TLJ
+30 4 * * * sh /home/michel/brightnessaiv2/generatepodcast.sh
+
+#TT LES SEMAINES BCKP LIBRECHAT
+0 3 * * 1 BACKUP_BASE_DIR=/home/michel/brightness-chat/LibreChat/bckp /usr/bin/env bash /home/michel/brightness-chat/LibreChat/ba>
+
+
+# IA (TLJ 05:00)
+0 5 * * * cd "$REPO" && "$PYTHON" agent/auto_watch_ai_v2.py >> "$REPO/docs/ai_watch.log" 2>&1
+
+# Tech/Innovation (TLJ 05:10)
+10 5 * * * cd "$REPO" && "$PYTHON" agent/auto_watch_allinno_v2.py >> "$REPO/docs/allinno_watch.log" 2>&1
+
+# TED (Mercredi 05:20)
+20 5 * * 3 cd "$REPO" && "$PYTHON" agent/auto_watch_ted_v2.py >> "$REPO/docs/ted_watch.log" 2>&1
+
+# Public Speaking (jeudi 05:30)
+30 5 * * 4 cd "$REPO" && "$PYTHON" agent/auto_watch_publicspeaking_v2.py >> "$REPO/docs/publicspeaking_watch.log" 2>&1
+
+# L&D (Mardi 05:40)
+40 5 * * 2 cd "$REPO" && "$PYTHON" agent/auto_watch_ld_v2.py >> "$REPO/docs/ld_watch.log" 2>&1
+
+# Débats & Idées (TLJ 05:50)
+50 5 * * * cd "$REPO" && "$PYTHON" agent/auto_watch_debatsetidees_v2.py >> "$REPO/docs/debats_watch.log" 2>&1
+
