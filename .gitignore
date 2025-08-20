@@ -6,6 +6,7 @@ files/*
 datas/*
 datas/**/
 img/*
+tests/*
 models/*
 tmp/*
 front/chat-config.json

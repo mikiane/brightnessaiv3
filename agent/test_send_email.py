@@ -5,7 +5,7 @@ Script de test d'envoi d'email HTML via Brevo en appelant
 libs.lib__agent_buildchronical.mail_html(title, text, email)
 
 Exemple d'utilisation:
-  cd /home/michel/brightnessaiv3 && /home/michel/myenv/bin/python -m tests.test_send_email_brevo \
+  cd /home/michel/brightnessaiv3 && /home/michel/myenv/bin/python -m agent.test_send_email \
     --to "destinataire@example.com" \
     --subject "Test Brevo" \
     --html "<h3>Test</h3><p>Message de test</p>"
@@ -31,6 +31,7 @@ def parse_arguments() -> argparse.Namespace:
 def main() -> None:
     args = parse_arguments()
 
+    # Rappel: la clé doit être présente dans .env sous BREVO_API_KEY
     if not getattr(config, "BREVO_API_KEY", None):
         config.logger.warning("BREVO_API_KEY manquante dans l'environnement (.env)")
 
