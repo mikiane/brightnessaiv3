@@ -22,6 +22,8 @@ from libs import lib__embedded_context
 from libs import lib__config as config
 logger = config.logger
 
+"""Podcast Géopolitique – génération quotidienne (alignée sur auto_genpodcast_ai.py)"""
+
 # Configuration
 DESTINATAIRES_TECH = config.DESTINATAIRES_TECH
 PODCASTS_PATH = config.PODCASTS_PATH
@@ -65,23 +67,30 @@ command = (
     "        Ne pas commencer par Voici l'artcie... Mais directement démarrer par l'article'. Respecter ces consignes strictement. "
 )
 
-# generation de la veille
-#model = DEFAULT_MODEL
-model = "gpt-5"
+# génération de la veille
+# Utilise le modèle par défaut, avec bascule de sécurité si modèle incompatible (ex: familles o1/reasoning/gpt-5).
+model_veille = DEFAULT_MODEL
+try:
+    mv = str(model_veille).lower()
+    if mv.startswith("o1") or "reason" in mv or mv == "gpt-5":
+        model_veille = "gpt-4o"
+except Exception:
+    model_veille = DEFAULT_MODEL
 
-responses = [lib_genpodcasts.process_url(command, url, model, "", "") for url in url_list]
+responses = [lib_genpodcasts.process_url(command, url, model_veille, "", "") for url in url_list]
 res = "<br><br>".join(responses)
 
 text_veille = str(res.replace("```html", "")).replace("```", "")
 
 logger.info(text_veille)
 
-# Génération du script via LLM
+# Génération du script via LLM (modèle de synthèse dédié, comme pour IA)
 prompt = """
 Contexte : Vous êtes chargé(e) d’écrire un script en français complet pour un podcast quotidien de revue de presse sur la géopolitique intitulé Le monde Aujourd’hui. Ce podcast doit être informatif, factuel et engageant, conçu pour un auditoire curieux mais non-expert. L’objectif est de fournir un contenu captivant et accessible tout en restant rigoureux.
 """
 
-text_final = lib_genpodcasts.call_llm(prompt, text_veille, "", model, 16000)
+model_synthese = "gpt-4o"
+text_final = lib_genpodcasts.call_llm(prompt, text_veille, "", model_synthese, 16000)
 logger.info(text_final)
 
 # TTS et montage
