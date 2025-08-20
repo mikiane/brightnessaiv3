@@ -192,53 +192,78 @@ def convert_and_merge(text, voice_id, final_filename):
 def mailaudio(title, audio, text, email):
     ##################################################################
     """
-    Fonction pour envoyer un e-mail avec une pièce jointe via SendGrid.
+    Fonction pour envoyer un e-mail avec une pièce jointe via Brevo (transactionnel).
+    Ancien envoi SendGrid conservé en commentaire pour référence.
     
     Args:
-        audio (str): Le chemin vers le fichier à joindre.
-        image (str) : Le chemin vers le fichier image à joindre.
-        destinataire (str): L'adresse e-mail du destinataire.
-        message (str, optional): Un message à inclure dans l'e-mail. Par défaut, le message est vide.
+        audio (str): Le chemin vers le fichier audio à joindre.
+        text (str): Contenu texte à inclure.
+        email (str): Adresse e-mail du destinataire.
     """
     ##################################################################
-    # Création de l'objet Mail
-    message = Mail(
-        from_email='contact@brightness.fr',
-        to_emails=email,
-        subject=title,
-        plain_text_content=text)
-    
-    # Ajout des destinataires en BCC
-    # for email in destinataires:
-    message.add_bcc('contact@mikiane.com')
-        
-    # Lecture du fichier audio à joindre
-    with open(audio, 'rb') as f:
-        data_audio = f.read()
 
-    # Encodage du fichier audio en base64
-    encoded_audio = base64.b64encode(data_audio).decode()
-    
-    # Détermination du type MIME du fichier audio
-    mime_type_audio = mimetypes.guess_type(audio)[0]
-    
-    # Création de l'objet Attachment pour l'audio
-    attachedFile_audio = Attachment(
-        FileContent(encoded_audio),
-        FileName(audio),
-        FileType(mime_type_audio),
-        Disposition('attachment')
-    )
-    message.add_attachment(attachedFile_audio)
+    # --- Ancien envoi SendGrid ---
+    # message = Mail(
+    #     from_email='contact@brightness.fr',
+    #     to_emails=email,
+    #     subject=title,
+    #     plain_text_content=text)
+    # message.add_bcc('contact@mikiane.com')
+    # with open(audio, 'rb') as f:
+    #     data_audio = f.read()
+    # encoded_audio = base64.b64encode(data_audio).decode()
+    # mime_type_audio = mimetypes.guess_type(audio)[0]
+    # attachedFile_audio = Attachment(
+    #     FileContent(encoded_audio),
+    #     FileName(audio),
+    #     FileType(mime_type_audio),
+    #     Disposition('attachment')
+    # )
+    # message.add_attachment(attachedFile_audio)
+    # try:
+    #     sg = SendGridAPIClient(SENDGRID_KEY)
+    #     response = sg.send(message)
+    #     logger.info(f"Email envoyé: {email} - {audio}")
+    #     logger.debug(f"Sendgrid status: {response.status_code}")
+    # except Exception as e:
+    #     logger.error(f"Erreur envoi email: {e}")
 
-    # Tentative d'envoi de l'e-mail via SendGrid
+    # --- Nouvel envoi via Brevo TransactionalEmailsApi (avec pièce jointe) ---
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key['api-key'] = BREVO_API_KEY
+    api_client = sib_api_v3_sdk.ApiClient(configuration)
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(api_client)
+
+    # Lire et encoder la pièce jointe
     try:
-        sg = SendGridAPIClient(SENDGRID_KEY)
-        response = sg.send(message)
-        logger.info(f"Email envoyé: {email} - {audio}")
-        logger.debug(f"Sendgrid status: {response.status_code}")
+        with open(audio, 'rb') as f:
+            data_audio = f.read()
+        encoded_audio = base64.b64encode(data_audio).decode()
     except Exception as e:
-        logger.error(f"Erreur envoi email: {e}")
+        logger.error(f"Erreur lecture du fichier audio '{audio}': {e}")
+        return
+
+    attachment = [{
+        "name": os.path.basename(audio),
+        "content": encoded_audio
+        # "contentType": mimetypes.guess_type(audio)[0] or 'application/octet-stream'  # optionnel
+    }]
+
+    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+        to=[{"email": email}],
+        bcc=[{"email": "contact@mikiane.com"}],
+        sender={"name": "Brightness.ai", "email": "contact@brightness.fr"},
+        subject=title,
+        text_content=text,
+        attachment=attachment
+    )
+
+    try:
+        api_response = api_instance.send_transac_email(send_smtp_email)
+        logger.info(f"Email (audio) envoyé via Brevo: {email} - {audio}")
+        logger.debug(f"Brevo response: {api_response}")
+    except BrevoApiException as e:
+        logger.error(f"Erreur envoi email (Brevo - audio): {e}")
 
 
 
