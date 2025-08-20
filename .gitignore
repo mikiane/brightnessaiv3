@@ -1,4 +1,3 @@
-
 .env
 .DS_Store
 __pycache__/
@@ -6,7 +5,7 @@ files/*
 datas/*
 datas/**/
 img/*
-tests/*
 models/*
 tmp/*
 front/chat-config.json
+tests/*
