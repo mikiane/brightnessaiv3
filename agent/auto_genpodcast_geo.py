@@ -66,7 +66,8 @@ command = (
 )
 
 # generation de la veille
-model = DEFAULT_MODEL
+#model = DEFAULT_MODEL
+model = "gpt-5"
 
 responses = [lib_genpodcasts.process_url(command, url, model, "", "") for url in url_list]
 res = "<br><br>".join(responses)
@@ -80,7 +81,7 @@ prompt = """
 Contexte : Vous êtes chargé(e) d’écrire un script en français complet pour un podcast quotidien de revue de presse sur la géopolitique intitulé Le monde Aujourd’hui. Ce podcast doit être informatif, factuel et engageant, conçu pour un auditoire curieux mais non-expert. L’objectif est de fournir un contenu captivant et accessible tout en restant rigoureux.
 """
 
-text_final = lib_genpodcasts.call_llm(prompt, text_veille, "", model, 14000)
+text_final = lib_genpodcasts.call_llm(prompt, text_veille, "", model, 16000)
 logger.info(text_final)
 
 # TTS et montage

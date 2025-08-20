@@ -25,9 +25,16 @@ export PODCASTS_PATH="$REPO/datas/podcasts/"  # destination des fichiers audio g
 
 cd "$REPO"
 
+#podcast AI
 echo "[$(date +'%F %T')] DÉMARRAGE generatepodcast.sh (AI)" >> "$LOG_FILE"
 "$PYTHON" -m agent.auto_genpodcast_ai >> "$LOG_FILE" 2>&1
 echo "[$(date +'%F %T')] FIN generatepodcast.sh (AI)" >> "$LOG_FILE"
+
+#podcast GEO
+echo "[$(date +'%F %T')] DÉMARRAGE generatepodcast.sh (GEO)" >> "$LOG_FILE"
+"$PYTHON" -m agent.auto_genpodcast_geo >> "$LOG_FILE" 2>&1
+echo "[$(date +'%F %T')] FIN generatepodcast.sh (GEO)" >> "$LOG_FILE"
+
 
 # Pour activer d'autres podcasts, décommentez si besoin :
 # echo "[$(date +'%F %T')] DÉMARRAGE generatepodcast.sh (GEO)" >> "$LOG_FILE"
