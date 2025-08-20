@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Définition du chemin de l'environnement virtuel
-VENV_PATH="/home/michel//myenv"
+VENV_PATH="/home/michel/myenv"
 
 # Définition du chemin vers requirements.txt
 REQUIREMENTS_PATH="requirements.txt"
