@@ -18,6 +18,10 @@ mkdir -p "$LOG_DIR"
 export LANG=fr_FR.UTF-8
 export LC_ALL=fr_FR.UTF-8
 export PYTHONPATH="$REPO:$REPO/libs"
+# Corrige les chemins attendus par les scripts Python
+export LOCALPATH="$REPO/"               # pour que "$LOCALPATH" + "sounds/..." pointe bien vers $REPO/sounds
+mkdir -p "$REPO/datas/podcasts"
+export PODCASTS_PATH="$REPO/datas/podcasts/"  # destination des fichiers audio générés
 
 cd "$REPO"
 
