@@ -5,7 +5,7 @@
 # - Se place dans /home/michel/brightnessaiv3
 # - Exécute le script Python en mode module et loggue la sortie
 
-set -euo pipefail
+#set -euo pipefail
 
 VENV="/home/michel/myenv"
 REPO="/home/michel/brightnessaiv3"
