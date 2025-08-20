@@ -122,7 +122,7 @@ logger.info("FIN VEILLE \n\n\n")
 
 
 
-prompt = """ Vous  trouverez dans le context précédent, le texte surlequel baser le script du podcast à écrire."
+prompt = """ Vous  trouverez dans le contexte précédent, le texte surlequel baser le script du podcast à écrire."
 Vous êtes chargé(e) d’écrire un script en français complet en moins de 4500 signes pour un podcast quotidien de revue de presse sur l'Intelligence Artificielle intitulé L'IA Aujourd’hui. Ce podcast doit être informatif, factuel et engageant, conçu pour un auditoire curieux mais non-expert. L’objectif est de fournir un contenu captivant et accessible tout en restant rigoureux.
 TRES IMPORTANT : NE PAS DEMARRER LA REPONSE PAR UN MESSAGE COMME "Here's a plan to generate the script détaillant le plan de réponse.
 Démarrer directement par le contenu du script généré et donc par "Bonjour..."
