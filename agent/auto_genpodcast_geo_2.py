@@ -112,7 +112,7 @@ Contraintes rédactionnelles :
 """
 
     # Modèle de synthèse — demandé: GPT‑5
-    model_synthese = "gpt-5"
+    model_synthese = "gpt-4o"
     text_final = lib_genpodcasts.call_llm(prompt, text_veille, "", model_synthese, 16000)
 
     logger.info("SCRIPT GÉOPOLITIQUE — début")
