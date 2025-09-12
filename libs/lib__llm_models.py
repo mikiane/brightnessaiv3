@@ -192,7 +192,7 @@ class LLMManager:
                 model=model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=max_tokens,
+                max_completion_tokens=max_tokens,
                 stream=stream
             )
             
@@ -453,7 +453,7 @@ class LLMManager:
                 context="",
                 input_data=prompt,
                 model=model,
-                #max_tokens=10000,
+                max_completion_tokens=10000,
                 temperature=temperature,
                 stream=True,
                 system=system
