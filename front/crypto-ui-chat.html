@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Crypto Brief – /crypto-agent</title>
+  <style>
+    :root{--bg:#0b0d10;--panel:#12161c;--muted:#8b98a5;--text:#e8edf2;--border:#1e2430;--accent:#77b6ff;--good:#3ddc97;--bad:#ff6b6b}
+    *{box-sizing:border-box}
+    body{margin:0;background:#0b0d10;color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+    .wrap{max-width:1100px;margin:20px auto;padding:0 16px 80px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+    h1{font-size:20px;margin:0}
+    .muted{color:var(--muted)}
+    .card{background:linear-gradient(180deg,#151a23,#12161c);border-radius:14px;padding:16px;margin-top:14px;border:1px solid var(--border);box-shadow:0 8px 30px rgba(0,0,0,.25)}
+    h2{margin:0 0 10px 0;font-size:16px}
+    .list{display:grid;gap:10px}
+    .item{padding:12px;border-radius:12px;background:#0c1117;border:1px solid var(--border)}
+    .row{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+    .grid-4{grid-column:span 4}
+    .grid-6{grid-column:span 6}
+    .grid-8{grid-column:span 8}
+    .grid-12{grid-column:span 12}
+    @media(max-width:980px){.grid-4,.grid-6,.grid-8{grid-column:span 12}}
+
+    /* --- Emphase Trades --- */
+    .hero{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+    .trade{grid-column:span 6;padding:18px;border-radius:16px; border:1px solid var(--border);position:relative}
+    .trade h2{font-size:18px;margin-bottom:12px}
+    .trade .big{font-size:22px;font-weight:800}
+    .trade .kv{display:flex;flex-wrap:wrap;gap:10px}
+    .trade .kv .k{padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#0d1218}
+    .trade .meta{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+
+    /* Color accents per asset */
+    .btc{--c:#f7931a55;--c2:#f7931a}
+    .eth{--c:#627eea55;--c2:#627eea}
+    .sol{--c:#14f19555;--c2:#14f195}
+    .link{--c:#2a5ada55;--c2:#2a5ada}
+    .ton{--c:#0098ea55;--c2:#0098ea}
+    .accent{box-shadow:0 0 0 1px var(--border), 0 0 35px var(--c) inset}
+    .accent-title{color:var(--c2)}
+
+    /* Per-asset cards */
+    .asset{border-left:4px solid var(--c2)}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:700px){.split{grid-template-columns:1fr}}
+
+    /* Notice */
+    .notice{padding:12px;border-radius:12px;background:#24111a;border:1px solid #3c1824;color:#ffd7e0}
+  </style>
+  <!-- Markdown renderer + sanitizer -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Crypto Brief <span class="muted">— /crypto-agent</span></h1>
+      <div class="muted">Cette page charge automatiquement <code>/crypto-agent/latest.json</code> et le met en forme.</div>
+    </div>
+    <div class="muted" id="asOf">—</div>
+  </header>
+
+  <!-- 1) TRADES EN PREMIER, PLUS GRANDS -->
+  <section class="hero" id="tradesHero"></section>
+
+  <!-- 2) INFOS PAR VALEUR (réf/range + niveaux) -->
+  <section class="row" id="assetsSection"></section>
+
+  <!-- 3) Contexte global & flux ETF & watchlist -->
+  <section class="row">
+    <div class="card grid-6">
+      <h2>Contexte marché</h2>
+      <div id="context" class="list"></div>
+    </div>
+    <div class="card grid-6">
+      <h2>Flux ETF (somme récents)</h2>
+      <div class="item"><span class="muted">BTC ETFs</span> · <span class="mono" id="btcFlowTxt">—</span></div>
+      <div class="item"><span class="muted">ETH ETFs</span> · <span class="mono" id="ethFlowTxt">—</span></div>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="card grid-12">
+      <h2>Watchlist</h2>
+      <div id="watch" class="list"></div>
+    </div>
+  </section>
+
+  <!-- 4) AGENDA TOUT EN BAS -->
+  <section class="row">
+    <div class="card grid-12">
+      <h2>Agenda</h2>
+      <div id="agenda" class="list"></div>
+    </div>
+  </section>
+
+  <!-- 5) CHATBOT (en dessous de l'app) -->
+  <section class="row">
+    <div class="card grid-12" id="chatbotCard">
+      <h2>Assistant de discussion sur la recommandation</h2>
+      <div class="muted" style="margin-bottom:8px">Le chatbot utilise <b>latest.json</b> comme contexte intégral pour répondre à vos questions.</div>
+      <div class="chatWrap" style="border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#15161A">
+        <header id="chat-header" style="display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid #24262B; background:#15161A; position:sticky; top:0; z-index:1">
+          <img id="chat-logo" alt="logo" style="height:28px; width:auto; display:block" />
+          <div class="title" id="chat-title" style="font-weight:600">Chat</div>
+        </header>
+        <main style="display:flex; flex-direction:column; max-width:900px; margin:0 auto; width:100%">
+          <section id="chat-chat" class="chat" aria-live="polite" style="flex:1; padding:14px; overflow:auto; min-height:180px"></section>
+        </main>
+        <footer class="composer" style="padding:10px 14px; border-top:1px solid #24262B; background:#15161A">
+          <div class="row" style="display:flex; gap:10px; align-items:center">
+            <textarea id="chat-input" placeholder="Écrivez votre message… (Entrée = envoyer, Maj+Entrée = nouvelle ligne)" style="flex:1; resize:vertical; min-height:60px; max-height:40vh; border:1px solid #24262B; background:#15161A; color:#E8E9EC; border-radius:10px; padding:10px;"></textarea>
+            <button id="chat-stop" class="btn ghost hidden" style="border:1px solid #24262B; background:transparent; color:#E8E9EC; padding:10px 12px; border-radius:10px; display:none">Stop</button>
+            <button id="chat-send" class="btn primary" style="background:linear-gradient(135deg, #D73C2C, #b32f23); border:none; color:#fff; padding:10px 12px; border-radius:10px; cursor:pointer">Envoyer</button>
+          </div>
+          <div class="row" style="display:flex; gap:10px; align-items:center; margin-top:6px"><span class="hint" id="chat-status" style="color:#9AA0A6; font-size:12px"></span></div>
+        </footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- Zone d'erreur -->
+  <div id="err" style="display:none" class="card notice"></div>
+</div>
+
+<script>
+const COLORS = {BTC:'btc',ETH:'eth',SOL:'sol',LINK:'link',TON:'ton'};
+const fmt = (n)=> typeof n==="number" ? n.toLocaleString("en-US", {maximumFractionDigits:2}) : n;
+
+function tradeCard(sym, t){
+  const cls = COLORS[sym]||'';
+  return `<div class="trade accent ${cls}">
+    <h2 class="accent-title">Trade — ${sym}</h2>
+    <div class="kv">
+      <div class="k"><div class="muted">Entrée</div><div class="big mono">$${fmt(t.entry||'—')}</div></div>
+      <div class="k"><div class="muted">TP</div><div class="big mono">$${fmt(t.tp||'—')}</div></div>
+      <div class="k"><div class="muted">SL</div><div class="big mono">$${fmt(t.sl||'—')}</div></div>
+    </div>
+    <div class="meta">
+      <span class="item">Risque <b>${fmt(t.risk||'—')}%</b></span>
+      <span class="item">Potentiel <b>${fmt(t.pot||'—')}%</b></span>
+      <span class="item">R/R <b>${fmt(t.rr||'—')}</b></span>
+      <span class="item">Levier <b>${t.leverage||'—'}</b></span>
+    </div>
+  </div>`;
+}
+
+function assetCard(sym, data){
+  const cls = COLORS[sym]||'';
+  const t = (data.spot?.tickers||[]).find(x=>x.sym===sym);
+  const lv = (data.levels||{})[sym]||{supports:[],resistances:[]};
+  const ref = t? t.ref : '—';
+  const range = t? t.range : '—';
+  return `<div class="card grid-4 asset ${cls}">
+    <h2 class="accent-title">${sym}</h2>
+    <div class="split">
+      <div class="item"><b>Référence</b><div class="mono">${ref}</div><div class="muted">Range ${range}</div></div>
+      <div class="item"><b>Niveaux clés</b><div>Supports: ${(lv.supports||[]).map(v=>`$${fmt(v)}`).join(' / ')||'—'}</div><div>Résistances: ${(lv.resistances||[]).map(v=>`$${fmt(v)}`).join(' / ')||'—'}</div>${lv.note?`<div class='muted'>${lv.note}</div>`:''}</div>
+    </div>
+  </div>`;
+}
+
+function render(DATA){
+  // header
+  document.getElementById('asOf').textContent = DATA?.meta?.as_of ? new Date(DATA.meta.as_of).toISOString() : '—';
+  if(DATA?.meta?.title){ document.title = DATA.meta.title + ' — /crypto-agent'; }
+
+  // trades
+  const hero = document.getElementById('tradesHero');
+  const trades = DATA?.trades||{};
+  const order = Object.keys(trades).sort((a,b)=> (a==='BTC'? -1: a==='ETH' && b!=='BTC'? -1: 0));
+  hero.innerHTML = order.map(sym=> tradeCard(sym, trades[sym])).join('');
+
+  // assets
+  const assets = new Set([...(DATA?.spot?.tickers||[]).map(x=>x.sym), ...Object.keys(DATA?.levels||{})]);
+  const assetsSection = document.getElementById('assetsSection');
+  assetsSection.innerHTML = Array.from(assets).map(sym=> assetCard(sym, DATA)).join('');
+
+  // contexte
+  const c = document.getElementById('context');
+  c.innerHTML = (DATA?.context||[]).map(({title,text})=>`<div class="item"><b>${title}</b><div class="muted">${text}</div></div>`).join('');
+
+  // flows
+  const btcSum = (DATA?.flows?.btc||[]).reduce((a,b)=>a+b,0);
+  const ethSum = (DATA?.flows?.eth||[]).reduce((a,b)=>a+b,0);
+  document.getElementById('btcFlowTxt').textContent = isFinite(btcSum)? `+$${fmt(btcSum)}M` : '—';
+  document.getElementById('ethFlowTxt').textContent = isFinite(ethSum)? `+$${fmt(ethSum)}M` : '—';
+
+  // watch
+  const w = document.getElementById('watch');
+  w.innerHTML = (DATA?.watch||[]).map(x=>{
+    const cls = COLORS[x.sym]||'';
+    return `<div class="item ${cls}"><div><b>${x.sym}</b></div><div class='muted'>${x.setup}</div><div>R/R <b>${fmt(x.rr)}</b>${x.note?` · <span class='muted'>${x.note}</span>`:''}</div></div>`;
+  }).join('');
+
+  // agenda
+  const ag = document.getElementById('agenda');
+  ag.innerHTML = (DATA?.agenda||[]).map(ev=>`<div class="item"><b>${ev.title}</b><div class='muted'>${ev.date}${ev.time?` · ${ev.time}`:''}${ev.risk?` · risque ${ev.risk}`:''}</div></div>`).join('');
+}
+
+async function main(){
+  const url = '/crypto-agent/latest.json';
+  try{
+    const r = await fetch(url, {cache:'no-cache'});
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    render(data);
+    // Expose le JSON complet pour le chatbot et notifie les écouteurs
+    window.__CRYPTO_DATA__ = data;
+    window.dispatchEvent(new Event('crypto-data-loaded'));
+  }catch(e){
+    const box = document.getElementById('err');
+    box.style.display='block';
+    box.innerHTML = `<b>Erreur de chargement</b><div class='muted'>Impossible de charger <code>${url}</code>. Vérifiez NGINX et la présence de <code>latest.json</code>.</div><div class='mono' style='margin-top:6px'>${e.message}</div>`;
+  }
+}
+
+main();
+
+/* =============================
+   Chatbot (basé sur votre code)
+   ============================= */
+(function(){
+  const els = {
+    logo: document.getElementById('chat-logo'),
+    title: document.getElementById('chat-title'),
+    chat: document.getElementById('chat-chat'),
+    input: document.getElementById('chat-input'),
+    send: document.getElementById('chat-send'),
+    stop: document.getElementById('chat-stop'),
+    status: document.getElementById('chat-status'),
+  };
+
+  // Config par défaut; surchargeable via /crypto-agent/chat-config.json
+  let cfg = {
+    title: 'Chat',
+    logoUrl: '',
+    apiUrl: 'https://dev.brightness-agency.com/chat',
+    apiKey: '',
+    model: '',
+    temperature: 0,
+    withHistory: true,
+    system: '',
+    consigne: 'Tu es un assistant financier. Réponds uniquement à partir du JSON de recommandation fourni dans le contexte. Si une info est absente, dis-le explicitement.'
+  };
+
+  // Contexte JSON intégral chargé plus haut
+  let CONTEXT_JSON = null;
+  function updateContextFromApp(){
+    if(window && window.__CRYPTO_DATA__) CONTEXT_JSON = window.__CRYPTO_DATA__;
+  }
+  updateContextFromApp();
+
+  async function loadConfig(){
+    const candidates = [
+      'chat-config.json',
+      '/front/chat-config.json',
+      '/crypto-agent/chat-config.json'
+    ];
+    for(const path of candidates){
+      try{
+        const res = await fetch(path, {cache:'no-store'});
+        if(res.ok){
+          cfg = {...cfg, ...(await res.json())};
+          break;
+        }
+      }catch(e){ /* ignore */ }
+    }
+    if(cfg.title) els.title.textContent = cfg.title;
+    if(cfg.logoUrl) els.logo.src = cfg.logoUrl; else els.logo.style.display='none';
+    if(!cfg.apiUrl) els.status.textContent = 'Configuration manquante: apiUrl';
+  }
+
+  function atBottom(container, threshold=40){ return container.scrollHeight - container.scrollTop - container.clientHeight < threshold; }
+  function autoScroll(){ els.chat.scrollTop = els.chat.scrollHeight; }
+  function $(tag, attrs={}, text=''){
+    const n = document.createElement(tag);
+    Object.entries(attrs).forEach(([k,v])=> n.setAttribute(k,v));
+    if(text) n.textContent = text; return n;
+  }
+  function renderMarkdown(md){
+    try{
+      const html = marked.parse(md||'');
+      return DOMPurify.sanitize(html, {USE_PROFILES: {html: true}});
+    }catch(e){ return (md||''); }
+  }
+  function renderMessage(role, content){
+    const container = $('div', {class:'msg', style:'display:flex;gap:10px;margin:10px 0'});
+    const roleEl = $('div', {class:'role ' + (role==='assistant'?'assistant':'user'), style:`flex:0 0 auto;width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;${role==='assistant'? 'background:#D73C2C':'background:#3A3F46'}`});
+    roleEl.textContent = role==='assistant' ? 'AI' : 'Vous';
+    const contentEl = $('div');
+    const textEl = $('div', {class:'content'});
+    textEl.innerHTML = renderMarkdown(content||'');
+    contentEl.appendChild(textEl);
+    container.appendChild(roleEl);
+    container.appendChild(contentEl);
+    els.chat.appendChild(container);
+    if(atBottom(els.chat)) autoScroll();
+    return { textEl };
+  }
+
+  const history = [];
+  let abortController = null;
+
+  function buildConsigne(){
+    // Base + JSON complet + derniers tours (si activé)
+    const base = cfg.consigne || '';
+    const jsonBlock = CONTEXT_JSON ? `
+
+Contexte JSON (recommandation du jour) :
+${JSON.stringify(CONTEXT_JSON)}` : '';
+    let hist = '';
+    if(cfg.withHistory && history.length){
+      const last = history.slice(-4).map(m=>`- ${m.role}: ${m.content}`).join('\n');
+      hist = `
+
+Historique récent:
+${last}`;
+    }
+    return `${base}${jsonBlock}${hist}`.trim();
+  }
+
+  async function sendMessage(){
+    const text = els.input.value;
+    const apiUrl = (cfg.apiUrl||'').trim();
+    if(!apiUrl){ els.status.textContent = 'apiUrl non défini'; return; }
+    if(!text || !text.trim()) return;
+
+    els.input.value = ''; els.input.focus();
+
+    renderMessage('user', text);
+    history.push({role:'user', content:text});
+
+    const { textEl: outEl } = renderMessage('assistant', '');
+
+    const payload = {
+      consigne: encodeURIComponent(buildConsigne()),
+      texte: encodeURIComponent(text),
+      system: cfg.system || '',
+      model: cfg.model || undefined,
+      temperature: String(Number(cfg.temperature||0).toFixed(2)),
+    };
+
+    abortController = new AbortController();
+    els.send.disabled = true; els.stop.style.display='inline-block'; els.status.textContent='';
+
+    try{
+      const headers = { 'Content-Type':'application/json', 'Accept':'text/plain' };
+      if(cfg.apiKey) headers['X-API-Key'] = cfg.apiKey;
+
+      const res = await fetch(apiUrl, {
+        method:'POST', headers, body: JSON.stringify(payload),
+        signal: abortController.signal, mode:'cors', credentials:'omit'
+      });
+      if(!res.ok || !res.body){ throw new Error(`HTTP ${res.status}`); }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let done=false; let accumulated='';
+      while(!done){
+        const chunk = await reader.read();
+        done = chunk.done;
+        if(chunk.value){
+          const t = decoder.decode(chunk.value, { stream:true });
+          accumulated += t;
+          outEl.innerHTML = renderMarkdown(accumulated);
+          autoScroll();
+        }
+      }
+      history.push({role:'assistant', content: accumulated});
+    }catch(err){
+      outEl.textContent = (outEl.textContent||'') + `
+[Erreur] ${err.message||err}`;
+    }finally{
+      els.send.disabled = false; els.stop.style.display='none'; abortController = null;
+    }
+  }
+
+  els.send.addEventListener('click', sendMessage);
+  els.stop.addEventListener('click', ()=>{ if(abortController){ abortController.abort(); els.stop.style.display='none'; els.send.disabled=false; }});
+  els.input.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } });
+
+  // Si la page a rechargé latest.json après coup, expose le contexte global
+  window.addEventListener('crypto-data-loaded', updateContextFromApp);
+  loadConfig();
+})();
+</script>
+</body>
+</html>

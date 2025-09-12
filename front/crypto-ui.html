@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Crypto Brief – /crypto-agent</title>
+  <style>
+    :root{--bg:#0b0d10;--panel:#12161c;--muted:#8b98a5;--text:#e8edf2;--border:#1e2430;--accent:#77b6ff;--good:#3ddc97;--bad:#ff6b6b}
+    *{box-sizing:border-box}
+    body{margin:0;background:#0b0d10;color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+    .wrap{max-width:1100px;margin:20px auto;padding:0 16px 80px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+    h1{font-size:20px;margin:0}
+    .muted{color:var(--muted)}
+    .card{background:linear-gradient(180deg,#151a23,#12161c);border-radius:14px;padding:16px;margin-top:14px;border:1px solid var(--border);box-shadow:0 8px 30px rgba(0,0,0,.25)}
+    h2{margin:0 0 10px 0;font-size:16px}
+    .list{display:grid;gap:10px}
+    .item{padding:12px;border-radius:12px;background:#0c1117;border:1px solid var(--border)}
+    .row{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+    .grid-4{grid-column:span 4}
+    .grid-6{grid-column:span 6}
+    .grid-8{grid-column:span 8}
+    .grid-12{grid-column:span 12}
+    @media(max-width:980px){.grid-4,.grid-6,.grid-8{grid-column:span 12}}
+
+    /* --- Emphase Trades --- */
+    .hero{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+    .trade{grid-column:span 6;padding:18px;border-radius:16px; border:1px solid var(--border);position:relative}
+    .trade h2{font-size:18px;margin-bottom:12px}
+    .trade .big{font-size:22px;font-weight:800}
+    .trade .kv{display:flex;flex-wrap:wrap;gap:10px}
+    .trade .kv .k{padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#0d1218}
+    .trade .meta{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+
+    /* Color accents per asset */
+    .btc{--c:#f7931a55;--c2:#f7931a}
+    .eth{--c:#627eea55;--c2:#627eea}
+    .sol{--c:#14f19555;--c2:#14f195}
+    .link{--c:#2a5ada55;--c2:#2a5ada}
+    .ton{--c:#0098ea55;--c2:#0098ea}
+    .accent{box-shadow:0 0 0 1px var(--border), 0 0 35px var(--c) inset}
+    .accent-title{color:var(--c2)}
+
+    /* Per-asset cards */
+    .asset{border-left:4px solid var(--c2)}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:700px){.split{grid-template-columns:1fr}}
+
+    /* Notice */
+    .notice{padding:12px;border-radius:12px;background:#24111a;border:1px solid #3c1824;color:#ffd7e0}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Crypto Brief <span class="muted">— /crypto-agent</span></h1>
+    </div>
+    <div class="muted" id="asOf">—</div>
+  </header>
+
+  <!-- 1) TRADES EN PREMIER, PLUS GRANDS -->
+  <section class="hero" id="tradesHero"></section>
+
+  <!-- 2) INFOS PAR VALEUR (réf/range + niveaux) -->
+  <section class="row" id="assetsSection"></section>
+
+  <!-- 3) Contexte global & flux ETF & watchlist -->
+  <section class="row">
+    <div class="card grid-6">
+      <h2>Contexte marché</h2>
+      <div id="context" class="list"></div>
+    </div>
+    <div class="card grid-6">
+      <h2>Flux ETF (somme récents)</h2>
+      <div class="item"><span class="muted">BTC ETFs</span> · <span class="mono" id="btcFlowTxt">—</span></div>
+      <div class="item"><span class="muted">ETH ETFs</span> · <span class="mono" id="ethFlowTxt">—</span></div>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="card grid-12">
+      <h2>Watchlist</h2>
+      <div id="watch" class="list"></div>
+    </div>
+  </section>
+
+  <!-- 4) AGENDA TOUT EN BAS -->
+  <section class="row">
+    <div class="card grid-12">
+      <h2>Agenda</h2>
+      <div id="agenda" class="list"></div>
+    </div>
+  </section>
+
+  <!-- Zone d'erreur -->
+  <div id="err" style="display:none" class="card notice"></div>
+</div>
+
+<script>
+const COLORS = {BTC:'btc',ETH:'eth',SOL:'sol',LINK:'link',TON:'ton'};
+const fmt = (n)=> typeof n==="number" ? n.toLocaleString("en-US", {maximumFractionDigits:2}) : n;
+
+function tradeCard(sym, t){
+  const cls = COLORS[sym]||'';
+  return `<div class="trade accent ${cls}">
+    <h2 class="accent-title">Trade — ${sym}</h2>
+    <div class="kv">
+      <div class="k"><div class="muted">Entrée</div><div class="big mono">$${fmt(t.entry||'—')}</div></div>
+      <div class="k"><div class="muted">TP</div><div class="big mono">$${fmt(t.tp||'—')}</div></div>
+      <div class="k"><div class="muted">SL</div><div class="big mono">$${fmt(t.sl||'—')}</div></div>
+    </div>
+    <div class="meta">
+      <span class="item">Risque <b>${fmt(t.risk||'—')}%</b></span>
+      <span class="item">Potentiel <b>${fmt(t.pot||'—')}%</b></span>
+      <span class="item">R/R <b>${fmt(t.rr||'—')}</b></span>
+      <span class="item">Levier <b>${t.leverage||'—'}</b></span>
+    </div>
+  </div>`;
+}
+
+function assetCard(sym, data){
+  const cls = COLORS[sym]||'';
+  const t = (data.spot?.tickers||[]).find(x=>x.sym===sym);
+  const lv = (data.levels||{})[sym]||{supports:[],resistances:[]};
+  const ref = t? t.ref : '—';
+  const range = t? t.range : '—';
+  return `<div class="card grid-4 asset ${cls}">
+    <h2 class="accent-title">${sym}</h2>
+    <div class="split">
+      <div class="item"><b>Référence</b><div class="mono">${ref}</div><div class="muted">Range ${range}</div></div>
+      <div class="item"><b>Niveaux clés</b><div>Supports: ${(lv.supports||[]).map(v=>`$${fmt(v)}`).join(' / ')||'—'}</div><div>Résistances: ${(lv.resistances||[]).map(v=>`$${fmt(v)}`).join(' / ')||'—'}</div>${lv.note?`<div class='muted'>${lv.note}</div>`:''}</div>
+    </div>
+  </div>`;
+}
+
+function render(DATA){
+  // header
+  document.getElementById('asOf').textContent = DATA?.meta?.as_of ? new Date(DATA.meta.as_of).toISOString() : '—';
+  if(DATA?.meta?.title){ document.title = DATA.meta.title + ' — /crypto-agent'; }
+
+  // trades
+  const hero = document.getElementById('tradesHero');
+  const trades = DATA?.trades||{};
+  const order = Object.keys(trades).sort((a,b)=> (a==='BTC'? -1: a==='ETH' && b!=='BTC'? -1: 0));
+  hero.innerHTML = order.map(sym=> tradeCard(sym, trades[sym])).join('');
+
+  // assets
+  const assets = new Set([...(DATA?.spot?.tickers||[]).map(x=>x.sym), ...Object.keys(DATA?.levels||{})]);
+  const assetsSection = document.getElementById('assetsSection');
+  assetsSection.innerHTML = Array.from(assets).map(sym=> assetCard(sym, DATA)).join('');
+
+  // contexte
+  const c = document.getElementById('context');
+  c.innerHTML = (DATA?.context||[]).map(({title,text})=>`<div class="item"><b>${title}</b><div class="muted">${text}</div></div>`).join('');
+
+  // flows
+  const btcSum = (DATA?.flows?.btc||[]).reduce((a,b)=>a+b,0);
+  const ethSum = (DATA?.flows?.eth||[]).reduce((a,b)=>a+b,0);
+  document.getElementById('btcFlowTxt').textContent = isFinite(btcSum)? `+$${fmt(btcSum)}M` : '—';
+  document.getElementById('ethFlowTxt').textContent = isFinite(ethSum)? `+$${fmt(ethSum)}M` : '—';
+
+  // watch
+  const w = document.getElementById('watch');
+  w.innerHTML = (DATA?.watch||[]).map(x=>{
+    const cls = COLORS[x.sym]||'';
+    return `<div class="item ${cls}"><div><b>${x.sym}</b></div><div class='muted'>${x.setup}</div><div>R/R <b>${fmt(x.rr)}</b>${x.note?` · <span class='muted'>${x.note}</span>`:''}</div></div>`;
+  }).join('');
+
+  // agenda
+  const ag = document.getElementById('agenda');
+  ag.innerHTML = (DATA?.agenda||[]).map(ev=>`<div class="item"><b>${ev.title}</b><div class='muted'>${ev.date}${ev.time?` · ${ev.time}`:''}${ev.risk?` · risque ${ev.risk}`:''}</div></div>`).join('');
+}
+
+async function main(){
+  const url = '/crypto-agent/latest.json';
+  try{
+    const r = await fetch(url, {cache:'no-cache'});
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    render(data);
+  }catch(e){
+    const box = document.getElementById('err');
+    box.style.display='block';
+    box.innerHTML = `<b>Erreur de chargement</b><div class='muted'>Impossible de charger <code>${url}</code>. Vérifiez NGINX et la présence de <code>latest.json</code>.</div><div class='mono' style='margin-top:6px'>${e.message}</div>`;
+  }
+}
+
+main();
+</script>
+</body>
+</html>
