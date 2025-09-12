@@ -178,6 +178,72 @@ class LLMManager:
         """Génère une complétion avec OpenAI"""
         try:
             client = self._get_openai_client()
+            # Route les modèles récents (gpt-5*) vers l'API Responses (pas de max_tokens)
+            if str(model).lower().startswith("gpt-5"):
+                # Prépare l'input au format Responses
+                input_msgs = []
+                if system:
+                    input_msgs.append({
+                        "role": "developer",
+                        "content": [{"type": "input_text", "text": system}]
+                    })
+                input_msgs.append({
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": prompt}]
+                })
+
+                # Appel non-streaming (plus fiable); on simulera le streaming côté serveur
+                resp = client.responses.create(
+                    model=model,
+                    input=input_msgs,
+                    # Ne pas passer max_tokens: certains modèles exigent max_completion_tokens / max_output_tokens
+                    # temperature peut être ignorée par certains modèles reasoning
+                    temperature=temperature if temperature is not None else 0.2,
+                )
+
+                # Extraction robuste du texte
+                def _extract_response_text(r):
+                    try:
+                        t = getattr(r, "output_text", None)
+                        if isinstance(t, str) and t.strip():
+                            return t
+                    except Exception:
+                        pass
+                    try:
+                        out = getattr(r, "output", None)
+                        if isinstance(out, list):
+                            parts = []
+                            for item in out:
+                                content = item.get("content") if isinstance(item, dict) else getattr(item, "content", None)
+                                if isinstance(content, list):
+                                    for c in content:
+                                        tt = c.get("text") if isinstance(c, dict) else getattr(c, "text", None)
+                                        if isinstance(tt, str) and tt:
+                                            parts.append(tt)
+                            if parts:
+                                return "\n".join(parts)
+                    except Exception:
+                        pass
+                    try:
+                        t2 = getattr(r, "text", None)
+                        if isinstance(t2, str) and t2.strip():
+                            return t2
+                    except Exception:
+                        pass
+                    try:
+                        return str(r)
+                    except Exception:
+                        return ""
+
+                text = _extract_response_text(resp)
+                if not stream:
+                    yield text
+                else:
+                    # Streaming simulé en petits blocs pour compatibilité SSE
+                    chunk_size = 200
+                    for i in range(0, len(text), chunk_size):
+                        yield text[i:i+chunk_size]
+                return
             
             # Cas spéciaux pour certains modèles
             if model in ["o1-preview", "o1", "o3-mini"]:
@@ -188,13 +254,20 @@ class LLMManager:
                     {"role": "user", "content": prompt}
                 ]
             
-            completion = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stream=stream
-            )
+            # Certains modèles (famille o1/o3) exigent 'max_completion_tokens'
+            mlow = str(model).lower()
+            params = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature,
+                "stream": stream,
+            }
+            if mlow.startswith("o1") or mlow.startswith("o3"):
+                params["max_completion_tokens"] = max_tokens
+            else:
+                params["max_tokens"] = max_tokens
+
+            completion = client.chat.completions.create(**params)
             
             if stream:
                 for message in completion:
