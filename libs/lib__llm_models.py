@@ -193,56 +193,66 @@ class LLMManager:
                 })
 
                 # Appel non-streaming (plus fiable); on simulera le streaming côté serveur
-                resp = client.responses.create(
-                    model=model,
-                    input=input_msgs,
-                    # Ne pas passer max_tokens ni temperature pour gpt-5
-                    text={"format": {"type": "text"}, "verbosity": "medium"},
-                    reasoning={"effort": "medium"}
-                )
-
-                # Extraction robuste du texte
-                def _extract_response_text(r):
-                    try:
-                        t = getattr(r, "output_text", None)
-                        if isinstance(t, str) and t.strip():
-                            return t
-                    except Exception:
-                        pass
-                    try:
-                        out = getattr(r, "output", None)
-                        if isinstance(out, list):
-                            parts = []
-                            for item in out:
-                                content = item.get("content") if isinstance(item, dict) else getattr(item, "content", None)
-                                if isinstance(content, list):
-                                    for c in content:
-                                        tt = c.get("text") if isinstance(c, dict) else getattr(c, "text", None)
-                                        if isinstance(tt, str) and tt:
-                                            parts.append(tt)
-                            if parts:
-                                return "\n".join(parts)
-                    except Exception:
-                        pass
-                    try:
-                        t2 = getattr(r, "text", None)
-                        if isinstance(t2, str) and t2.strip():
-                            return t2
-                    except Exception:
-                        pass
-                    try:
-                        return str(r)
-                    except Exception:
-                        return ""
-
-                text = _extract_response_text(resp)
-                if not stream:
-                    yield text
+                if stream:
+                    # Streaming natif Responses
+                    with client.responses.stream(
+                        model=model,
+                        input=input_msgs,
+                        text={"format": {"type": "text"}, "verbosity": "medium"},
+                        reasoning={"effort": "medium"}
+                    ) as s:
+                        for event in s:
+                            etype = getattr(event, "type", None)
+                            if etype == "response.output_text.delta":
+                                delta = getattr(event, "delta", "")
+                                if delta:
+                                    yield delta
+                        # S'assure que le stream est finalisé (pour gérer les erreurs si besoin)
+                        _ = s.get_final_response()
                 else:
-                    # Streaming simulé en petits blocs pour compatibilité SSE
-                    chunk_size = 200
-                    for i in range(0, len(text), chunk_size):
-                        yield text[i:i+chunk_size]
+                    # Non-stream: récupération complète
+                    resp = client.responses.create(
+                        model=model,
+                        input=input_msgs,
+                        text={"format": {"type": "text"}, "verbosity": "medium"},
+                        reasoning={"effort": "medium"}
+                    )
+                    # Extraction robuste du texte
+                    def _extract_response_text(r):
+                        try:
+                            t = getattr(r, "output_text", None)
+                            if isinstance(t, str) and t.strip():
+                                return t
+                        except Exception:
+                            pass
+                        try:
+                            out = getattr(r, "output", None)
+                            if isinstance(out, list):
+                                parts = []
+                                for item in out:
+                                    content = item.get("content") if isinstance(item, dict) else getattr(item, "content", None)
+                                    if isinstance(content, list):
+                                        for c in content:
+                                            tt = c.get("text") if isinstance(c, dict) else getattr(c, "text", None)
+                                            if isinstance(tt, str) and tt:
+                                                parts.append(tt)
+                                if parts:
+                                    return "\n".join(parts)
+                        except Exception:
+                            pass
+                        try:
+                            t2 = getattr(r, "text", None)
+                            if isinstance(t2, str) and t2.strip():
+                                return t2
+                        except Exception:
+                            pass
+                        try:
+                            return str(r)
+                        except Exception:
+                            return ""
+
+                    text = _extract_response_text(resp)
+                    yield text
                 return
             
             # Cas spéciaux pour certains modèles
