@@ -196,9 +196,9 @@ class LLMManager:
                 resp = client.responses.create(
                     model=model,
                     input=input_msgs,
-                    # Ne pas passer max_tokens: certains modèles exigent max_completion_tokens / max_output_tokens
-                    # temperature peut être ignorée par certains modèles reasoning
-                    temperature=temperature if temperature is not None else 0.2,
+                    # Ne pas passer max_tokens ni temperature pour gpt-5
+                    text={"format": {"type": "text"}, "verbosity": "medium"},
+                    reasoning={"effort": "medium"}
                 )
 
                 # Extraction robuste du texte
