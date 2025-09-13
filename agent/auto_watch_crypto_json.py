@@ -409,25 +409,12 @@ if generated_text:
 else:
   log.warning("Aucun texte généré extrait de la réponse")
 
-brevo_api_key = os.getenv("BREVO_API_KEY")
-sender_email = os.getenv("BREVO_SENDER_EMAIL", "no-reply@brightness.fr")
-sender_name = os.getenv("BREVO_SENDER_NAME", "Brightness AI")
-to_email = "michel@brightness.fr"
-subject = "Veille Crypto"
+# Envoi email désactivé
+log.info("Envoi email: désactivé (fonctionnalité supprimée)")
 
-_email_ok = send_email_via_brevo(
-  brevo_api_key=brevo_api_key,
-  subject=subject,
-  text_body=generated_text,
-  to_email=to_email,
-  sender_email=sender_email,
-  sender_name=sender_name,
-)
-log.info(f"Envoi email Brevo: {'OK' if _email_ok else 'ECHEC'}")
-
-# Ecriture du fichier JSON généré dans ../front/crypto-agent/latest.json
+# Écriture du fichier JSON généré
 try:
-  out_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "front", "crypto-agent"))
+  out_dir = "/home/michel/datas"
   os.makedirs(out_dir, exist_ok=True)
   out_path = os.path.join(out_dir, "latest.json")
   if generated_text:
