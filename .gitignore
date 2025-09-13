@@ -8,3 +8,4 @@ img/*
 models/*
 tmp/*
 front/chat-config.json
+front/crypto-agent/*
