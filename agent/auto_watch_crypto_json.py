@@ -47,6 +47,12 @@ client = OpenAI(api_key=api_key) if api_key else OpenAI()
 
 def extract_response_text(resp):
   try:
+    parsed = getattr(resp, "output_parsed", None)
+    if isinstance(parsed, (dict, list)):
+      return json.dumps(parsed, ensure_ascii=False)
+  except Exception:
+    pass
+  try:
     text = getattr(resp, "output_text", None)
     if isinstance(text, str) and text.strip():
       return text
@@ -146,14 +152,22 @@ response = client.responses.create(
       "content": [
         {
           "type": "input_text",
-          "text": "Developer: # Rôle et Objectif Créer un rapport synthétique, actionnable et strictement structuré pour une stratégie HODL/swing crypto avec un maximum de 2 allers-retours par mois, uniquement sur les opportunités les plus pertinentes. Instructions Générer un rapport en français clair et pédagogique, sous forme de texte facilement lisible (pas de JSON). Structurer impérativement le contenu par les sections suivantes : Ethereum (ETH) Bitcoin (BTC) Solana (SOL) Autres altcoins (1 ou 2, selon actualité) Plan hebdomadaire synthétique Risque macro/marché Adapter la structure détaillée pour chaque crypto selon les besoins ci-dessous, en restant dans un format texte structuré par rubrique. Toutes les valeurs numériques doivent apparaître dans le rapport en respectant les formats requis : prix en USD, pourcentages, ratios gain/risque (float), etc. Les ordres doivent être formulés comme s’ils devaient être placés directement sur un exchange, avec des niveaux de prix précis. Sous-catégories ETH/BTC/SOL : Inclure tendance macro, niveaux clés supports/résistances, signaux d’entrée détaillés (type, prix, confirmation), TP, SL (avec buffer), justification (technique et fondamentale), risque et potentiel (%), ratio R/R (float), effet de levier conseillé. Altcoins : Maximum 2, selon l’actualité. Présenter chaque actif par symbole et inclure breakout/TP/SL/justification/ratio dans un paragraphe clair. Plan hebdo : Synthétiser une liste concise et priorisée d’actions avec conditions de niveau prix, maximum 2 A/R par mois. Macro risque : Lister les événements majeurs et indiquer toute alerte de volatilité/manipulation dans un encadré. Contexte Applicable pour une stratégie swing/HODL en crypto, principalement spot mais effet de levier jusqu’à x2 possible. En-dehors du scope : scalping/intraday, plus de 2 allers-retours par mois, signaux peu pertinents ou monnaies non listées. Étapes de raisonnement Analyser les tendances et actualités majeures. Sélectionner uniquement les signaux très pertinents pour chaque actif. Détaillez et justifiez chaque proposition d’ordre selon les critères définis, en format texte. Planification et vérification Vérifier la cohérence des niveaux de prix, ratios, justificatifs et la structure finale du texte. S’assurer qu’aucune section ne soit manquante ou vide. Limiter le nombre total d’allers-retours à 2 par mois sur l’ensemble du rapport. Optimiser la clarté et la concision à chaque étape. Débuter par une checklist concise (3-7 points conceptuels) des tâches à réaliser avant tout traitement substantiel. Après génération, conclure par 1-2 phrases validant le respect de tous les critères de structure, format et limites. Corriger et régénérer si besoin. Format de sortie Générer la réponse sous forme de texte structuré, chaque section clairement identifiée et toutes les valeurs chiffrées explicitement indiquées. 📝 Crypto Brief – [Date] (UTC) Prix spot (référence) BTC : [prix] ETH : [prix] SOL : [prix] LINK : [prix] TON : [prix] ⚡ Contexte marché ETF : [résumé flux/inflows/outflows] Réseaux : [upgrades majeurs, lancements produits] Macro : [événements macro à venir – CPI, FOMC, etc.] 🔑 Niveaux clés BTC : supports / [y] / [z] ; résistances / [y] / [z] ETH : supports / [y] ; résistances / [y] / [z] SOL : supports / [y] ; résistances / [y] / [z] LINK : support ; résistance [y] TON : support ; résistance [y] 🎯 Trades actionnables (max 2 / mois) 1) [Actif #1] (priorité #1) Entrée : [type + prix + confirmation] TP : [prix] SL : [prix] Risque : [-x%] | Potentiel : [+y%] | R/R ≈ [valeur] Levier : [spot / x1–x2] Idée : [résumé technique + fondamental] 2) [Actif #2] (priorité #2) Entrée : [type + prix + confirmation] TP : [prix] SL : [prix] Risque : [-x%] | Potentiel : [+y%] | R/R ≈ [valeur] Levier : [spot / x1–x2] Idée : [résumé technique + fondamental] 👀 Watchlist (pas d’exécution par défaut) Actif 1 : [setup résumé + niveaux + R/R] Actif 2 : [setup résumé + niveaux + R/R] Actif 3 : [setup résumé + niveaux + R/R] 🚨 Risques à surveiller Macro : [CPI, FOMC, etc.] Marché : [expirations options/futures, ETF flows] Volatilité : [fenêtres de risque, fausses cassures 👉 Plan hebdo : exécuter uniquement les 2 setups principaux. Watchlist activée seulement si un trade est annulé/non déclenché. Contrôle de format strict Toutes les informations exigées par le schéma doivent être présentes et correctement formatées dans le texte, aucune section ne doit manquer."
-          }
+          "text": """Developer:
+Objectif: produire un brief crypto swing/HODL (max 2 A/R par mois), en français.
+Contraintes:
+- Utilise web_search pour PRIX/ACTUS du jour et cite la date des données.
+- Réponds UNIQUEMENT en JSON strict conforme au schéma imposé par l’API; aucune prose hors JSON; aucune source/URL.
+- Remplis toutes les sections requises avec des valeurs cohérentes (USD, %, ratios R/R float, TP/SL/entry précis, supports/résistances numériques).
+Focus: ETH, BTC, SOL; 0–2 altcoins pertinents; plan hebdomadaire synthétique; risques macro/agenda clés.
+"""
+        }
       ]
     }
   ],
+  
   text={
     "format": {
-      "type": "text"
+      "type": "json"
     },
     "verbosity": "medium"
   },
@@ -185,3 +199,23 @@ _email_ok = send_email_via_brevo(
   sender_name=sender_name,
 )
 log.info(f"Envoi email Brevo: {'OK' if _email_ok else 'ECHEC'}")
+
+# Ecriture du fichier JSON généré dans ../front/crypto-agent/latest.json
+try:
+  out_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "front", "crypto-agent"))
+  os.makedirs(out_dir, exist_ok=True)
+  out_path = os.path.join(out_dir, "latest.json")
+  if generated_text:
+    try:
+      data = json.loads(generated_text)
+      with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+      log.info(f"Fichier JSON écrit: {out_path}")
+    except Exception:
+      with open(out_path, "w", encoding="utf-8") as f:
+        f.write(generated_text)
+      log.info(f"Texte écrit (non parsé) vers: {out_path}")
+  else:
+    log.warning("Aucun texte généré; fichier latest.json non écrit.")
+except Exception as e:
+  log.exception(f"Erreur écriture latest.json: {e}")

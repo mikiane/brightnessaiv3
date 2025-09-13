@@ -48,6 +48,12 @@
 
     /* Notice */
     .notice{padding:12px;border-radius:12px;background:#24111a;border:1px solid #3c1824;color:#ffd7e0}
+    /* Typing indicator */
+    .typing{display:inline-flex;gap:4px;align-items:center;margin-top:4px}
+    .typing .dot{width:6px;height:6px;background:#9AA0A6;border-radius:50%;opacity:.3;animation:blink 1.2s infinite}
+    .typing .dot:nth-child(2){animation-delay:.2s}
+    .typing .dot:nth-child(3){animation-delay:.4s}
+    @keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
   </style>
   <!-- Markdown renderer + sanitizer -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -58,7 +64,7 @@
   <header>
     <div>
       <h1>Crypto Brief <span class="muted">— /crypto-agent</span></h1>
-      <div class="muted">Cette page charge automatiquement <code>/crypto-agent/latest.json</code> et le met en forme.</div>
+      
     </div>
     <div class="muted" id="asOf">—</div>
   </header>
@@ -101,7 +107,6 @@
   <section class="row">
     <div class="card grid-12" id="chatbotCard">
       <h2>Assistant de discussion sur la recommandation</h2>
-      <div class="muted" style="margin-bottom:8px">Le chatbot utilise <b>latest.json</b> comme contexte intégral pour répondre à vos questions.</div>
       <div class="chatWrap" style="border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#15161A">
         <header id="chat-header" style="display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid #24262B; background:#15161A; position:sticky; top:0; z-index:1">
           <img id="chat-logo" alt="logo" style="height:28px; width:auto; display:block" />
@@ -299,7 +304,7 @@ main();
     container.appendChild(contentEl);
     els.chat.appendChild(container);
     if(atBottom(els.chat)) autoScroll();
-    return { textEl };
+    return { textEl, container, contentEl };
   }
 
   const history = [];
@@ -334,7 +339,13 @@ ${last}`;
     renderMessage('user', text);
     history.push({role:'user', content:text});
 
-    const { textEl: outEl } = renderMessage('assistant', '');
+    const { textEl: outEl, contentEl: outBox } = renderMessage('assistant', '');
+    // Ajoute un indicateur de saisie
+    const typing = document.createElement('div');
+    typing.className = 'typing';
+    typing.setAttribute('aria-live','polite');
+    typing.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
+    outBox.appendChild(typing);
 
     const payload = {
       consigne: encodeURIComponent(buildConsigne()),
@@ -345,7 +356,7 @@ ${last}`;
     };
 
     abortController = new AbortController();
-    els.send.disabled = true; els.stop.style.display='inline-block'; els.status.textContent='';
+    els.send.disabled = true; els.input.disabled = true; els.stop.style.display='inline-block'; els.status.textContent='L’IA réfléchit...';
 
     try{
       const headers = { 'Content-Type':'application/json', 'Accept':'text/plain' };
@@ -375,7 +386,9 @@ ${last}`;
       outEl.textContent = (outEl.textContent||'') + `
 [Erreur] ${err.message||err}`;
     }finally{
-      els.send.disabled = false; els.stop.style.display='none'; abortController = null;
+      // Retire l’indicateur de saisie
+      try{ typing.remove(); }catch(e){}
+      els.send.disabled = false; els.input.disabled = false; els.stop.style.display='none'; els.status.textContent=''; abortController = null;
     }
   }
 

@@ -1,186 +1,75 @@
 {
-    "meta": {
-    "as_of": "2025-09-12T00:00:00Z",
-    "title": "Crypto Brief – 12 Sep 2025 (UTC)"
-    },
-    "spot": {
-    "note": "Données temps réel agrégées (CoinMarketCap/CoinGecko/Yahoo)",
+  "meta": {
+    "as_of": "2025-09-13T15:00:00Z",
+    "title": "Crypto Brief – 13 Sep 2025 (UTC)"
+  },
+  "spot": {
+    "note": "Données temps réel agrégées (mise à jour intraday). Stratégie swing/HODL, spot prioritaire, effet de levier max x2.",
     "tickers": [
-    {
-    "sym": "BTC",
-    "ref": "113,048.63",
-    "range": "113,049–115,000",
-    "dir": "up"
-    },
-    {
-    "sym": "ETH",
-    "ref": "4,297.62–4,508.52",
-    "range": "4,298–4,509",
-    "dir": "up"
-    },
-    {
-    "sym": "SOL",
-    "ref": "218.87–237.95",
-    "range": "219–238",
-    "dir": "up"
-    },
-    {
-    "sym": "LINK",
-    "ref": "23.00–24.49",
-    "range": "23.00–24.49",
-    "dir": "up"
-    },
-    {
-    "sym": "TON",
-    "ref": "3.09",
-    "range": "3.09",
-    "dir": "up"
-    }
+      { "sym": "BTC", "ref": 115883.0, "range": "114,822–116,761", "dir": "up" },
+      { "sym": "ETH", "ref": 4722.34, "range": "4,508–4,763", "dir": "up" },
+      { "sym": "SOL", "ref": 243.12, "range": "236.96–244.24", "dir": "up" },
+      { "sym": "LINK", "ref": 25.2, "range": "24.23–25.30", "dir": "up" },
+      { "sym": "TON", "ref": 3.11, "range": "3.08–3.13", "dir": "flat" }
     ]
-    },
-    "context": [
+  },
+  "context": [
     {
-    "title": "ETF",
-    "text": "Afflux soutenus: BTC +$741.5M & +$552.7M; ETH +$171.5M & +$113.1M (10–11 Sep)."
-    },
-    {
-    "title": "Ethereum — Pectra",
-    "text": "Mainnet 7 mai 2025 (UX/validateurs)."
+      "title": "Checklist",
+      "text": "• Confirmer les niveaux clés (H4/Jour) et le contexte ETF.\n• Prioriser 1–2 setups maximum (limite 2 A/R mensuels).\n• Préparer ordres conditionnels (breakout/retest) avec buffers.\n• Gérer le risque <2% par trade, levier spot/x1–x2.\n• Éviter publications macro (FOMC/CPI) pour les entrées."
     },
     {
-    "title": "Solana — Firedancer",
-    "text": "Client alternatif testnet; déploiement 2025."
+      "title": "Plan hebdomadaire synthétique",
+      "text": "1) BTC: ordre d’achat breakout au-dessus de 116,400$ (50% taille), ajout sur retest 115,800$ si confirmé. 2) ETH: achat sur repli 4,500$ (ordre limite) avec confirmation de mèche. 3) Pas d’autre A/R ce mois-ci hors invalidation majeure."
     },
     {
-    "title": "Chainlink — CCIP",
-    "text": "Intégrations en expansion; rôle accru attendu H2 2025."
+      "title": "Macro",
+      "text": "FOMC 16–17 sept (attente -25 bps), ventes au détail US la même semaine. Volatilité attendue autour de l’annonce et de la conférence de presse."
     },
     {
-    "title": "TON",
-    "text": "Intégration Telegram; teasing partenariat global."
+      "title": "ETF",
+      "text": "Flux récents soutenus: BTC +552.7M$ (11 sept) et +642.0M$ (12 sept) ; ETH +113.1M$ (11 sept) et +171.5M$ (10 sept)."
     },
     {
-    "title": "Macro",
-    "text": "CPI août m/m +0.4%, a/a +2.9%. FOMC 16–17 Sep (consensus: -25 bps)."
+      "title": "Ethereum",
+      "text": "Momentum soutenu par les ETF spot et la trajectoire d’optimisation UX (suite à Dencun); catalyseurs L2 et staking institutionnel en montée."
+    },
+    {
+      "title": "Solana",
+      "text": "Écosystème actif; client alternatif Firedancer en testnet avancé (objectif perf/résilience), catalyseur si jalons H2 2025–2026."
+    },
+    {
+      "title": "Alerte Volatilité/Manipulation",
+      "text": "• Pré-FOMC: risque de whipsaws sur cassures.\n• Gamma/Options: aimantation possible près de 115k sur BTC à l’approche d’échéances.\n• Week-end: liquidité plus faible → spreads/SL plus larges."
+    },
+    {
+      "title": "Validation",
+      "text": "Rapport structuré (ETH/BTC/SOL/Altcoins/Plan/Macro), 2 trades max définis, niveaux/TP/SL chiffrés et ratios R/R fournis."
     }
-    ],
-    "levels": {
-    "BTC": {
-    "supports": [
-    112200,
-    107200
-    ],
-    "resistances": [
-    116000,
-    120000
-    ],
-    "note": "MME50≈114.5k / MME100≈112.2k"
-    },
-    "ETH": {
-    "supports": [
-    4320,
-    4200
-    ],
-    "resistances": [
-    4560,
-    4800
-    ]
-    },
-    "SOL": {
-    "supports": [
-    212,
-    200
-    ],
-    "resistances": [
-    240,
-    260
-    ]
-    },
-    "LINK": {
-    "supports": [
-    22
-    ],
-    "resistances": [
-    25.5
-    ]
-    },
-    "TON": {
-    "supports": [
-    2.9
-    ],
-    "resistances": [
-    3.3
-    ]
-    }
-    },
-    "flows": {
-    "btc": [
-    741.5,
-    552.7
-    ],
-    "eth": [
-    171.5,
-    113.1
-    ]
-    },
-    "trades": {
-    "BTC": {
-    "entry": 116400,
-    "tp": 124000,
-    "sl": 112900,
-    "risk": -3.01,
-    "pot": 6.53,
-    "rr": 2.17,
-    "leverage": "spot/x1–x2"
-    },
-    "ETH": {
-    "entry": 4300,
-    "tp": 4800,
-    "sl": 4180,
-    "risk": -2.79,
-    "pot": 11.63,
-    "rr": 4.17,
-    "leverage": "spot/x1–x2"
-    }
-    },
-    "watch": [
-    {
-    "sym": "SOL",
-    "setup": "Breakout $240 → TP $260 / SL $232",
-    "rr": 1.8,
-    "note": "Catalyseur Firedancer 2025"
-    },
-    {
-    "sym": "LINK",
-    "setup": "Breakout $25.20 → TP $28.00 / SL $24.00",
-    "rr": 2.33,
-    "note": "Déploiements CCIP"
-    },
-    {
-    "sym": "TON",
-    "setup": "Breakout $3.30 → TP $3.80 / SL $3.05",
-    "rr": 2,
-    "note": "Effet Telegram"
-    }
-    ],
-    "agenda": [
-    {
-    "date": "2025-09-17",
-    "title": "FOMC (annonce & PC)",
-    "time": "18:00–18:30 UTC",
-    "risk": "élevé"
-    },
-    {
-    "date": "2025-09-11",
-    "title": "CPI (publié)",
-    "time": "08:30 UTC",
-    "risk": "moyen"
-    },
-    {
-    "date": "2025-09-26",
-    "title": "Deribit: échéance mensuelle",
-    "time": "08:00 UTC",
-    "risk": "volatilité"
-    }
-    ]
-    }
+  ],
+  "levels": {
+    "BTC": { "supports": [112200, 107200], "resistances": [116800, 120000], "note": "Structure haussière H4; flux ETF positifs." },
+    "ETH": { "supports": [4500, 4320], "resistances": [4760, 5000], "note": "Achat privilégié sur repli vers zone 4,50k$." },
+    "SOL": { "supports": [232, 220], "resistances": [250, 260], "note": "Breakout propre au-dessus de 250$." },
+    "LINK": { "supports": [24.0, 22.0], "resistances": [25.5, 28.0], "note": "Narratif infra/oracles (CCIP) en soutien." },
+    "TON": { "supports": [3.0, 2.9], "resistances": [3.3, 3.8], "note": "Effet réseau Telegram; prudence liquidité." }
+  },
+  "flows": {
+    "btc": [552.7, 642.0],
+    "eth": [113.1, 171.5]
+  },
+  "trades": {
+    "BTC": { "entry": 116400, "tp": 124000, "sl": 112900, "risk": -3.01, "pot": 6.53, "rr": 2.17, "leverage": "spot/x1–x2" },
+    "ETH": { "entry": 4500, "tp": 4950, "sl": 4320, "risk": -4.0, "pot": 10.0, "rr": 2.5, "leverage": "spot/x1–x2" }
+  },
+  "watch": [
+    { "sym": "LINK", "setup": "Breakout $25.20 → TP $28.00 / SL $24.00 (confirmation H4 requise).", "rr": 2.33, "note": "Momentum sur intégrations CCIP; valider volumes." },
+    { "sym": "TON", "setup": "Breakout $3.30 → TP $3.80 / SL $3.05 (mèche de validation).", "rr": 2.0, "note": "Effet Telegram; attention à la liquidité et au slippage." }
+  ],
+  "agenda": [
+    { "date": "2025-09-17", "title": "FOMC (annonce & conférence)", "time": "18:00–18:30 UTC", "risk": "élevé" },
+    { "date": "2025-09-17", "title": "US Retail Sales", "time": "12:30 UTC", "risk": "moyen" },
+    { "date": "2025-09-26", "title": "Deribit: échéance mensuelle options", "time": "08:00 UTC", "risk": "volatilité" }
+  ]
+}
+
