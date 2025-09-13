@@ -64,9 +64,7 @@
   <header>
     <div>
       <h1>Crypto Brief <span class="muted">— /crypto-agent</span></h1>
-      
     </div>
-    <div class="muted" id="asOf">—</div>
   </header>
 
   <!-- 1) TRADES EN PREMIER, PLUS GRANDS -->
@@ -170,7 +168,7 @@ function assetCard(sym, data){
 
 function render(DATA){
   // header
-  // Affichage de la date dans un format plus lisible, toujours en UTC
+  // Mise à jour du titre de la page avec la date complète
   if(DATA?.meta?.as_of){
     const date = new Date(DATA.meta.as_of);
     const options = { 
@@ -182,18 +180,21 @@ function render(DATA){
       timeZone: 'UTC',
       timeZoneName: 'short'
     };
-    document.getElementById('asOf').textContent = date.toLocaleString('fr-FR', options);
-  } else {
-    document.getElementById('asOf').textContent = '—';
-  }
-  
-  // Mise à jour du titre de la page
-  if(DATA?.meta?.title){ 
+    const formattedDate = date.toLocaleString('fr-FR', options);
+    
+    // Mise à jour du titre H1 avec la date formatée
+    const h1Title = document.querySelector('h1');
+    if(h1Title){
+      h1Title.innerHTML = `Crypto Brief <span class="muted">— ${formattedDate}</span>`;
+    }
+    
+    // Mise à jour du titre de la page
+    document.title = `Crypto Brief – ${formattedDate}`;
+  } else if(DATA?.meta?.title){ 
+    // Fallback si pas de as_of mais un titre
     document.title = DATA.meta.title + ' — /crypto-agent';
-    // On peut aussi mettre à jour le titre H1 si nécessaire
     const h1Title = document.querySelector('h1');
     if(h1Title && DATA.meta.title.includes('Crypto Brief')){
-      // Extraire juste la partie date du titre si présent
       const match = DATA.meta.title.match(/Crypto Brief – (.+)/);
       if(match && match[1]){
         h1Title.innerHTML = `Crypto Brief <span class="muted">— ${match[1]}</span>`;
