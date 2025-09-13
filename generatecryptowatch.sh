@@ -1,35 +1,35 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Lancement de la veille crypto
-# - Exécute successivement:
-#   1) agent/auto_watch_crypto_json.py (génère /home/michel/datas/latest.json)
-#   2) agent/auto_watch_crypto.py (autres traitements)
+# Veille crypto quotidienne
+# - Utilise le venv global /home/michel/myenv
+# - Se place dans /home/michel/brightnessaiv3
+# - Exécute les scripts Python en mode module et loggue la sortie
 
-set -uo pipefail
+#set -euo pipefail
 
-timestamp() { date '+%Y-%m-%d %H:%M:%S %Z'; }
+VENV="/home/michel/myenv"
+REPO="/home/michel/brightnessaiv3"
+PYTHON="$VENV/bin/python"
+LOG_DIR="$REPO/docs"
+LOG_FILE="$LOG_DIR/generatecryptowatch.log"
 
-ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$ROOT_DIR"
+mkdir -p "$LOG_DIR"
+mkdir -p "/home/michel/datas"
 
-# Utilise PYTHON si défini, sinon python3
-PY_BIN="${PYTHON:-python3}"
+export LANG=fr_FR.UTF-8
+export LC_ALL=fr_FR.UTF-8
+export PYTHONPATH="$REPO:$REPO/libs"
+# Corrige les chemins attendus par certains scripts Python
+export LOCALPATH="$REPO/"
 
-run_step() {
-  local script_path="$1"
-  echo "[$(timestamp)] ▶︎ Lancement: $script_path"
-  if "$PY_BIN" "$script_path"; then
-    echo "[$(timestamp)] ✅ Terminé:  $script_path"
-  else
-    rc=$?
-    echo "[$(timestamp)] ❌ Erreur ($rc): $script_path"
-    # On continue malgré l'erreur pour lancer l'étape suivante
-  fi
-}
+cd "$REPO"
 
-run_step "agent/auto_watch_crypto_json.py"
-run_step "agent/auto_watch_crypto.py"
+echo "[$(date +'%F %T')] DÉMARRAGE generatecryptowatch.sh (JSON)" >> "$LOG_FILE"
+"$PYTHON" -m agent.auto_watch_crypto_json >> "$LOG_FILE" 2>&1
+echo "[$(date +'%F %T')] FIN generatecryptowatch.sh (JSON)" >> "$LOG_FILE"
 
-echo "[$(timestamp)] ✅ Workflow generatecryptowatch terminé"
+echo "[$(date +'%F %T')] DÉMARRAGE generatecryptowatch.sh (WATCH)" >> "$LOG_FILE"
+"$PYTHON" -m agent.auto_watch_crypto >> "$LOG_FILE" 2>&1
+echo "[$(date +'%F %T')] FIN generatecryptowatch.sh (WATCH)" >> "$LOG_FILE"
 
 
