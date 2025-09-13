@@ -141,10 +141,33 @@ search_response = client.responses.create(
         {
           "type": "input_text",
           "text": (
-            f"Tu es un expert en crypto. Nous sommes le {today} (UTC). "
-            "Recherche les prix actuels et actualités du jour pour BTC, ETH, SOL "
-            "et les principales altcoins. Trouve les niveaux de support/résistance, "
-            "les tendances du marché et les événements macro importants."
+            f"Tu es un expert crypto analysant le marché en date du {today} (UTC). "
+            "Effectue une recherche approfondie pour créer un rapport HODL/swing (max 2 A/R par mois).\n\n"
+            
+            "RECHERCHE REQUISE:\n"
+            "1. Prix actuels et tendances 24h/7j pour:\n"
+            "   - Bitcoin (BTC) - prix USD, supports/résistances clés\n"
+            "   - Ethereum (ETH) - prix USD, supports/résistances clés\n" 
+            "   - Solana (SOL) - prix USD, supports/résistances clés\n"
+            "   - 1-2 altcoins pertinents selon l'actualité (ex: LINK, TON)\n\n"
+            
+            "2. Contexte marché:\n"
+            "   - Flux ETF récents (BTC/ETH)\n"
+            "   - Actualités majeures par crypto (upgrades, partenariats)\n"
+            "   - Indicateurs techniques (MME50, MME100)\n\n"
+            
+            "3. Analyse technique pour signaux swing:\n"
+            "   - Niveaux d'entrée potentiels\n"
+            "   - Objectifs de prix (TP) réalistes\n"
+            "   - Stop loss avec buffer de sécurité\n"
+            "   - Ratios risque/rendement\n\n"
+            
+            "4. Macro/Agenda:\n"
+            "   - Événements économiques majeurs (FOMC, CPI)\n"
+            "   - Échéances importantes (options Deribit)\n"
+            "   - Risques de volatilité\n\n"
+            
+            "Fournis toutes les données numériques précises trouvées."
           )
         }
       ]
@@ -154,7 +177,7 @@ search_response = client.responses.create(
     "verbosity": "medium"
   },
   reasoning={
-    "effort": "high",
+    "effort": "medium",
     "summary": "auto"
   },
 )
@@ -165,6 +188,117 @@ log.info("Données crypto récupérées via web_search")
 
 # Étape 2: Génération du JSON structuré avec les données récupérées
 log.info("Étape 2: Génération du rapport JSON structuré")
+
+json_schema = """{
+"$schema": "https://json-schema.org/draft/2020-12/schema",
+"$id": "https://example.org/crypto-brief.schema.json",
+"title": "CryptoBrief",
+"type": "object",
+"required": ["meta", "spot", "context", "levels", "flows", "trades", "watch", "agenda"],
+"properties": {
+  "meta": {
+    "type": "object",
+    "required": ["as_of", "title"],
+    "properties": {
+      "as_of": {"type": "string", "format": "date-time"},
+      "title": {"type": "string"}
+    }
+  },
+  "spot": {
+    "type": "object",
+    "required": ["note", "tickers"],
+    "properties": {
+      "note": {"type": "string"},
+      "tickers": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["sym", "ref", "range", "dir"],
+          "properties": {
+            "sym": {"type": "string"},
+            "ref": {"type": ["string", "number"]},
+            "range": {"type": "string"},
+            "dir": {"type": "string", "enum": ["up", "down", "flat"]}
+          }
+        }
+      }
+    }
+  },
+  "context": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "required": ["title", "text"],
+      "properties": {
+        "title": {"type": "string"},
+        "text": {"type": "string"}
+      }
+    }
+  },
+  "levels": {
+    "type": "object",
+    "additionalProperties": {
+      "type": "object",
+      "required": ["supports", "resistances"],
+      "properties": {
+        "supports": {"type": "array", "items": {"type": "number"}},
+        "resistances": {"type": "array", "items": {"type": "number"}},
+        "note": {"type": ["string", "null"]}
+      }
+    }
+  },
+  "flows": {
+    "type": "object",
+    "properties": {
+      "btc": {"type": "array", "items": {"type": "number"}},
+      "eth": {"type": "array", "items": {"type": "number"}}
+    }
+  },
+  "trades": {
+    "type": "object",
+    "additionalProperties": {
+      "type": "object",
+      "required": ["entry", "tp", "sl", "risk", "pot", "rr"],
+      "properties": {
+        "entry": {"type": "number"},
+        "tp": {"type": "number"},
+        "sl": {"type": "number"},
+        "risk": {"type": "number"},
+        "pot": {"type": "number"},
+        "rr": {"type": "number"},
+        "leverage": {"type": "string"}
+      }
+    }
+  },
+  "watch": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "required": ["sym", "setup", "rr"],
+      "properties": {
+        "sym": {"type": "string"},
+        "setup": {"type": "string"},
+        "rr": {"type": "number"},
+        "note": {"type": "string"}
+      }
+    }
+  },
+  "agenda": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "required": ["date", "title"],
+      "properties": {
+        "date": {"type": "string"},
+        "title": {"type": "string"},
+        "time": {"type": "string"},
+        "risk": {"type": "string"}
+      }
+    }
+  }
+}
+}"""
+
 response = client.responses.create(
   model="gpt-5",
   store=False,
@@ -175,8 +309,9 @@ response = client.responses.create(
         {
           "type": "input_text",
           "text": (
-            f"Tu es un expert crypto. Voici les données actuelles du marché:\n\n{search_data}\n\n"
-            f"Date: {today} (UTC). Génère un rapport structuré en JSON strict."
+            f"Voici les données de marché crypto collectées en date du {today} (UTC):\n\n"
+            f"{search_data}\n\n"
+            "Utilise ces données pour générer un rapport JSON structuré selon le schéma fourni."
           )
         }
       ]
@@ -186,14 +321,70 @@ response = client.responses.create(
       "content": [
         {
           "type": "input_text",
-          "text": """Developer:
-Objectif: produire un brief crypto swing/HODL (max 2 A/R par mois), en français.
-Contraintes:
-- Utilise les données fournies pour créer le rapport.
-- Réponds UNIQUEMENT en JSON strict conforme au schéma imposé par l'API; aucune prose hors JSON; aucune source/URL.
-- Remplis toutes les sections requises avec des valeurs cohérentes (USD, %, ratios R/R float, TP/SL/entry précis, supports/résistances numériques).
-Focus: ETH, BTC, SOL; 0–2 altcoins pertinents; plan hebdomadaire synthétique; risques macro/agenda clés.
-"""
+          "text": f"""# Mission: Générer un rapport crypto swing/HODL structuré
+
+## Instructions de mise en forme:
+1. Génère UNIQUEMENT un JSON strict conforme au schéma fourni
+2. AUCUNE prose en dehors du JSON
+3. Toutes les sections requises doivent être remplies
+4. Respecte les formats: prix en USD, pourcentages, ratios R/R en float
+5. Maximum 2 allers-retours par mois dans l'ensemble du rapport
+
+## Schéma JSON à respecter:
+{json_schema}
+
+## Structure détaillée à remplir:
+
+### meta:
+- as_of: timestamp ISO du rapport ({today}T00:00:00Z)
+- title: "Crypto Brief – {datetime.now(timezone.utc).strftime('%d %b %Y')} (UTC)"
+
+### spot:
+- note: source des données (ex: "Données temps réel agrégées")
+- tickers: array avec BTC, ETH, SOL + 1-2 altcoins pertinents
+  - sym: symbole
+  - ref: prix actuel ou range
+  - range: fourchette de prix du jour
+  - dir: direction (up/down/flat)
+
+### context:
+Array de 4-6 points contextuels majeurs (ETF, upgrades, macro, etc.)
+
+### levels:
+Pour BTC, ETH, SOL minimum:
+- supports: array de 2+ niveaux
+- resistances: array de 2+ niveaux
+- note: optionnel (ex: MME50/MME100)
+
+### flows:
+- btc: array des flux ETF récents
+- eth: array des flux ETF récents
+
+### trades:
+Maximum 2 trades actifs (respect limite 2 A/R/mois):
+- entry: prix d'entrée précis
+- tp: take profit
+- sl: stop loss (avec buffer)
+- risk: % négatif
+- pot: % positif potentiel
+- rr: ratio risque/rendement (float)
+- leverage: "spot" ou "spot/x1-x2"
+
+### watch:
+2-3 setups en surveillance (non comptés dans les 2 A/R):
+- sym: symbole
+- setup: description "Breakout $X → TP $Y / SL $Z"
+- rr: ratio R/R
+- note: catalyseur
+
+### agenda:
+3-5 événements clés à venir:
+- date: YYYY-MM-DD
+- title: événement
+- time: optionnel (HH:MM UTC)
+- risk: niveau (élevé/moyen/faible)
+
+Génère le JSON complet maintenant."""
         }
       ]
     }
@@ -206,7 +397,7 @@ Focus: ETH, BTC, SOL; 0–2 altcoins pertinents; plan hebdomadaire synthétique;
     "verbosity": "medium"
   },
   reasoning={
-    "effort": "high",
+    "effort": "low",
     "summary": "auto"
   },
 )
