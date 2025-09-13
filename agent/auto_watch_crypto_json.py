@@ -177,7 +177,7 @@ search_response = client.responses.create(
     "verbosity": "medium"
   },
   reasoning={
-    "effort": "medium",
+    "effort": "high",
     "summary": "auto"
   },
 )
