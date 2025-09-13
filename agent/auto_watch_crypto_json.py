@@ -167,7 +167,7 @@ Focus: ETH, BTC, SOL; 0–2 altcoins pertinents; plan hebdomadaire synthétique;
   
   text={
     "format": {
-      "type": "json"
+      "type": "json_object"
     },
     "verbosity": "medium"
   },
