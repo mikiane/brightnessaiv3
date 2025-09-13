@@ -128,11 +128,46 @@ def send_email_via_brevo(brevo_api_key, subject, text_body, to_email, sender_ema
 today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
+# Étape 1: Recherche web pour obtenir les données actuelles
+log.info("Étape 1: Recherche des données crypto actuelles via web_search")
+search_response = client.responses.create(
+  model="gpt-5",
+  store=False,
+  tools=[{"type":"web_search"}],
+  input=[
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": (
+            f"Tu es un expert en crypto. Nous sommes le {today} (UTC). "
+            "Recherche les prix actuels et actualités du jour pour BTC, ETH, SOL "
+            "et les principales altcoins. Trouve les niveaux de support/résistance, "
+            "les tendances du marché et les événements macro importants."
+          )
+        }
+      ]
+    }
+  ],
+  text={
+    "verbosity": "medium"
+  },
+  reasoning={
+    "effort": "high",
+    "summary": "auto"
+  },
+)
+
+# Extraire les données de la recherche
+search_data = extract_response_text(search_response)
+log.info("Données crypto récupérées via web_search")
+
+# Étape 2: Génération du JSON structuré avec les données récupérées
+log.info("Étape 2: Génération du rapport JSON structuré")
 response = client.responses.create(
   model="gpt-5",
-  # clé pour démarrer "à blanc" chaque jour
-  store=False,  # <<< important
-  tools=[{"type":"web_search"}],
+  store=False,
   input=[
     {
       "role": "developer",
@@ -140,9 +175,8 @@ response = client.responses.create(
         {
           "type": "input_text",
           "text": (
-            f"Tu es un expert en crypto. Nous sommes le {today} (UTC). Ignore tout contexte antérieur. "
-            "Tu DOIS utiliser web_search pour récupérer les PRIX/ACTUS du jour "
-            "et tu cites la date des données."
+            f"Tu es un expert crypto. Voici les données actuelles du marché:\n\n{search_data}\n\n"
+            f"Date: {today} (UTC). Génère un rapport structuré en JSON strict."
           )
         }
       ]
@@ -155,8 +189,8 @@ response = client.responses.create(
           "text": """Developer:
 Objectif: produire un brief crypto swing/HODL (max 2 A/R par mois), en français.
 Contraintes:
-- Utilise web_search pour PRIX/ACTUS du jour et cite la date des données.
-- Réponds UNIQUEMENT en JSON strict conforme au schéma imposé par l’API; aucune prose hors JSON; aucune source/URL.
+- Utilise les données fournies pour créer le rapport.
+- Réponds UNIQUEMENT en JSON strict conforme au schéma imposé par l'API; aucune prose hors JSON; aucune source/URL.
 - Remplis toutes les sections requises avec des valeurs cohérentes (USD, %, ratios R/R float, TP/SL/entry précis, supports/résistances numériques).
 Focus: ETH, BTC, SOL; 0–2 altcoins pertinents; plan hebdomadaire synthétique; risques macro/agenda clés.
 """
