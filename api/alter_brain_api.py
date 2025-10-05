@@ -8,7 +8,7 @@
 
 from libs import lib__embedded_context
 from flask import Flask, request, jsonify, Response
-from libs.lib__auth import require_auth, setup_cors, add_security_headers
+from libs.lib__auth import setup_cors, add_security_headers
 import os
 import time
 from zipfile import ZipFile
@@ -33,7 +33,6 @@ def after_request(response):
     return add_security_headers(response)
 
 @app.route('/buildindex', methods=['POST'])
-@require_auth
 def handle_file():
     """
     Construire un index de documents.
@@ -75,7 +74,6 @@ def handle_file():
     return(response)
 
 @app.route('/searchcontext', methods=['POST'])
-@require_auth
 def handle_req():
     """
     Rechercher du contexte pertinent dans un index existant.
@@ -97,7 +95,6 @@ def handle_req():
     return(response)
 
 @app.route('/streamtasks', methods=['POST'])
-@require_auth
 def handle_stream_tasks():
     """
     Exécuter des tâches LLM en streaming (texte envoyé progressivement).
@@ -129,7 +126,6 @@ def handle_stream_tasks():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/getvector', methods=['POST'])
-@require_auth  # Ajouter cette ligne
 def getvector():
     """
     Interroger un service Vectorize externe et récupérer des passages pertinents.
