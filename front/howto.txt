@@ -1,0 +1,175 @@
+═════════════════════════════════════════════════════════════════════════
+  GUIDE D'UTILISATION - SIMPLE-RAG.HTML
+  Interface de Chat avec Retrieval-Augmented Generation (RAG)
+═════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 1. CRÉER UN FICHIER JSON DE PARAMÉTRAGE                            │
+└─────────────────────────────────────────────────────────────────────┘
+
+Le fichier JSON doit contenir les paramètres de configuration suivants :
+
+{
+  "title": "Nom de votre assistant",
+  "logoUrl": "img/logo.png",
+  "apiUrl": "https://votre-domaine.com/chat",
+  "searchUrl": "https://votre-domaine.com/searchcontext",
+  "apiKey": "votre-cle-api",
+  "model": "gpt-4o",
+  "temperature": 0.0,
+  "withHistory": true,
+  "activate_source": true,
+  "system": "Instructions système pour le LLM",
+  "consigne": "Consignes de réponse pour le LLM",
+  "brain_id": "identifiant-de-votre-index"
+}
+
+PARAMÈTRES DÉTAILLÉS :
+──────────────────────
+• title          : Titre affiché dans l'en-tête du chat
+• logoUrl        : Chemin vers l'image du logo (relatif au dossier front/)
+• apiUrl         : URL de l'API de chat/streaming (endpoint LLM)
+• searchUrl      : URL de l'API de recherche de contexte (endpoint RAG)
+• apiKey         : Clé d'authentification pour les appels API
+• brain_id       : Identifiant de l'index vectoriel à interroger
+• model          : Modèle LLM à utiliser (ex: gpt-4o, gpt-3.5-turbo)
+• temperature    : Créativité du modèle (0.0 = déterministe, 1.0 = créatif)
+• withHistory    : true/false - Inclure l'historique dans les requêtes
+• activate_source: true/false - Afficher le bloc "source" avec les extraits
+• system         : Prompt système définissant le comportement global du LLM
+• consigne       : Instructions spécifiques sur la façon de répondre
+
+EXEMPLES DE FICHIERS :
+──────────────────────
+✓ michel.json         - Configuration pour l'avatar Michel Levy Provencal
+✓ activate_source.json - Configuration template générique
+✓ chat-config.json    - Configuration par défaut (si aucun paramètre)
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 2. APPELER L'URL AVEC LES BONS PARAMÈTRES                          │
+└─────────────────────────────────────────────────────────────────────┘
+
+USAGE BASIQUE (sans paramètre) :
+────────────────────────────────
+https://votre-domaine.com/front/simple-rag.html
+
+→ Charge automatiquement chat-config.json
+
+
+USAGE AVEC CONFIGURATION SPÉCIFIQUE :
+─────────────────────────────────────
+https://votre-domaine.com/front/simple-rag.html?index=nom-fichier
+
+Exemples :
+• https://votre-domaine.com/front/simple-rag.html?index=michel
+  → Charge michel.json
+
+• https://votre-domaine.com/front/simple-rag.html?index=activate_source
+  → Charge activate_source.json
+
+• https://votre-domaine.com/front/simple-rag.html?index=mon-config.json
+  → Charge mon-config.json (avec extension)
+
+NOTES IMPORTANTES :
+──────────────────
+✓ Le paramètre 'index' accepte les caractères : a-z A-Z 0-9 _ -
+✓ L'extension .json est optionnelle (ajoutée automatiquement)
+✓ Les fichiers doivent être dans le même dossier que simple-rag.html
+✓ Si le fichier n'existe pas, repli sur chat-config.json
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 3. INTÉGRATION DANS UN IFRAME                                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+CODE HTML POUR IFRAME :
+───────────────────────
+<iframe 
+  src="https://votre-domaine.com/front/simple-rag.html?index=michel"
+  width="100%" 
+  height="600"
+  style="border: 1px solid #24262B; border-radius: 10px;"
+  title="Assistant Chat RAG"
+  loading="lazy"
+  sandbox="allow-scripts allow-same-origin allow-forms"
+></iframe>
+
+EXEMPLE AVEC DIMENSIONS RESPONSIVE :
+────────────────────────────────────
+<div style="position: relative; width: 100%; padding-bottom: 75%; height: 0;">
+  <iframe 
+    src="https://votre-domaine.com/front/simple-rag.html?index=michel"
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+    title="Assistant Chat RAG"
+    allow="clipboard-write"
+  ></iframe>
+</div>
+
+EXEMPLE EN PLEINE HAUTEUR :
+───────────────────────────
+<iframe 
+  src="https://votre-domaine.com/front/simple-rag.html?index=activate_source"
+  style="width: 100%; height: 100vh; border: none;"
+  title="Assistant Chat RAG"
+></iframe>
+
+PARAMÈTRES IFRAME RECOMMANDÉS :
+───────────────────────────────
+• sandbox       : Sécurité (allow-scripts allow-same-origin allow-forms)
+• loading="lazy": Chargement différé pour optimisation
+• allow         : Permissions (clipboard-write pour copier/coller)
+• title         : Accessibilité (description pour lecteurs d'écran)
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 4. FONCTIONNEMENT TECHNIQUE                                         │
+└─────────────────────────────────────────────────────────────────────┘
+
+FLUX DE TRAITEMENT :
+───────────────────
+1. L'utilisateur pose une question
+2. La question est envoyée à searchUrl (endpoint /searchcontext)
+3. L'API retourne des extraits pertinents du brain_id
+4. La question + contexte sont envoyés à apiUrl (endpoint LLM)
+5. La réponse est streamée en temps réel (SSE)
+6. L'historique est maintenu localement (4 derniers messages)
+7. Si activate_source=true, affichage des sources utilisées
+
+ENDPOINTS REQUIS :
+─────────────────
+POST /searchcontext
+  Form-data: request, brain_id, model
+  Retour: JSON avec le contexte trouvé
+
+POST /chat (ou votre endpoint LLM)
+  JSON: consigne, texte, system, model, temperature
+  Retour: Stream text/plain
+
+SÉCURITÉ :
+─────────
+• Authentification via X-API-Key dans les headers
+• CORS doit être configuré sur le serveur
+• Validation des paramètres côté serveur
+• Sandbox iframe pour isolation
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 5. PERSONNALISATION CSS                                             │
+└─────────────────────────────────────────────────────────────────────┘
+
+Le fichier utilise des variables CSS personnalisables :
+--bg      : Couleur de fond principale
+--panel   : Couleur des panneaux (header, footer)
+--muted   : Couleur des bordures
+--text    : Couleur du texte
+--accent  : Couleur d'accentuation (boutons, avatar AI)
+--subtle  : Couleur du texte secondaire
+--radius  : Rayon des bordures arrondies
+--shadow  : Ombre portée
+
+Pour personnaliser, modifier les valeurs dans :root{...} (ligne 8)
+
+
+═════════════════════════════════════════════════════════════════════
+  FIN DU GUIDE
+═════════════════════════════════════════════════════════════════════
