@@ -515,8 +515,8 @@ class LLMManager:
         logger.info(f"generate_chat called with model: {model}, temperature: {temperature}")
         
         # Gérer les cas spéciaux de modèles
-        if model == "claude-2":
-            model = "claude-2.1"
+        if model == "claude":
+            model = "claude-sonnet-4-5-20250929"
         elif model == "claude-3":
             model = "claude-3-opus-20240229"
         elif model == "google":
