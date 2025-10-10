@@ -193,8 +193,14 @@
   function setupBrightnessLinks() {
     console.log('🔧 Setup Brightness Links activé');
     
+    // Vérifier que l'élément chat existe
+    if (!els.chat) {
+      console.error('❌ Element chat non trouvé!');
+      return;
+    }
+    
     els.chat.addEventListener('click', (e) => {
-      console.log('🖱️ Clic détecté dans le chat');
+      console.log('🖱️ Clic détecté dans le chat', e.target);
       
       // Vérifier si c'est un lien
       const link = e.target.closest('a');
@@ -204,10 +210,17 @@
       }
       
       // Vérifier si c'est le lien Brightness Contact
-      const href = link.getAttribute('href');
+      const href = link.getAttribute('href') || link.href;
       console.log('🔗 Lien cliqué:', href);
       
-      if (href && href.includes('brightness-institute.fr/contact')) {
+      // Détection plus flexible de l'URL Brightness
+      const isBrightnessContact = href && (
+        href.includes('brightness-institute.fr/contact') ||
+        href.includes('brightness.fr/contact') ||
+        href === '/contact' // Pour les liens relatifs
+      );
+      
+      if (isBrightnessContact) {
         console.log('✅ Lien Brightness détecté!');
         e.preventDefault(); // Empêcher l'ouverture normale
         e.stopPropagation(); // Empêcher la propagation
@@ -241,11 +254,17 @@
         // Vérifier la longueur pour l'URL (limite ~2000 caractères)
         const encoded = encodeURIComponent(conversationText);
         
+        // S'assurer que l'URL est complète
+        let fullUrl = href;
+        if (href === '/contact' || !href.startsWith('http')) {
+          fullUrl = 'https://www.brightness-institute.fr/contact';
+        }
+        
         if(encoded.length < 1800){
           // MÉTHODE 1: URL parameters (conversations courtes)
           console.log('📤 Méthode URL, longueur encodée:', encoded.length);
           els.status.textContent = 'Ouverture du formulaire de contact avec votre conversation...';
-          const finalUrl = `${href}?conversation=${encoded}`;
+          const finalUrl = `${fullUrl}?conversation=${encoded}`;
           console.log('🌐 URL finale:', finalUrl.substring(0, 100) + '...');
           window.open(finalUrl, '_blank');
           setTimeout(() => els.status.textContent = '', 3000);
@@ -257,14 +276,14 @@
             localStorage.setItem('brightness_timestamp', Date.now().toString());
             console.log('✅ Données stockées dans localStorage');
             els.status.textContent = 'Transfert de votre conversation vers le formulaire...';
-            const finalUrl = `${href}#chat-export`;
+            const finalUrl = `${fullUrl}#chat-export`;
             console.log('🌐 URL avec hash:', finalUrl);
             window.open(finalUrl, '_blank');
             setTimeout(() => els.status.textContent = '', 3000);
           } catch(err) {
             console.error('❌ Erreur localStorage:', err);
             // Fallback: ouvrir normalement
-            window.open(href, '_blank');
+            window.open(fullUrl, '_blank');
           }
         }
       }
@@ -272,7 +291,6 @@
   }
 
   async function init(){
-    setupBrightnessLinks();
     await loadConfig();
     if(cfg.initialisation && cfg.initialisation.trim()){
       const { textEl }=renderMessage('assistant','');
@@ -280,6 +298,10 @@
       textEl.innerHTML=html;
       history.push({role:'assistant', content:cfg.initialisation});
     }
+    // Appeler setupBrightnessLinks après que tout soit chargé
+    setTimeout(() => {
+      setupBrightnessLinks();
+    }, 100);
   }
   
   init();
