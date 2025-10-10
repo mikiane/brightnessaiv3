@@ -191,15 +191,35 @@
 
   // Intercepter les clics sur les liens Brightness Contact
   function setupBrightnessLinks() {
+    console.log('🔧 Setup Brightness Links activé');
+    
     els.chat.addEventListener('click', (e) => {
+      console.log('🖱️ Clic détecté dans le chat');
+      
       // Vérifier si c'est un lien
       const link = e.target.closest('a');
-      if (!link) return;
+      if (!link) {
+        console.log('❌ Pas un lien');
+        return;
+      }
       
       // Vérifier si c'est le lien Brightness Contact
       const href = link.getAttribute('href');
+      console.log('🔗 Lien cliqué:', href);
+      
       if (href && href.includes('brightness-institute.fr/contact')) {
+        console.log('✅ Lien Brightness détecté!');
         e.preventDefault(); // Empêcher l'ouverture normale
+        e.stopPropagation(); // Empêcher la propagation
+        
+        // Vérifier qu'il y a une conversation
+        if (history.length === 0) {
+          console.log('⚠️ Historique vide');
+          window.open(href, '_blank');
+          return;
+        }
+        
+        console.log('📝 Historique:', history.length, 'messages');
         
         // Formatter la conversation
         const dateStr = new Date().toLocaleString('fr-FR', { 
@@ -216,24 +236,33 @@
             return `${role}:\n${m.content}`;
           }).join('\n\n─────────────────\n\n');
         
+        console.log('📊 Longueur conversation:', conversationText.length, 'caractères');
+        
         // Vérifier la longueur pour l'URL (limite ~2000 caractères)
         const encoded = encodeURIComponent(conversationText);
         
         if(encoded.length < 1800){
           // MÉTHODE 1: URL parameters (conversations courtes)
+          console.log('📤 Méthode URL, longueur encodée:', encoded.length);
           els.status.textContent = 'Ouverture du formulaire de contact avec votre conversation...';
-          window.open(`${href}?conversation=${encoded}`, '_blank');
+          const finalUrl = `${href}?conversation=${encoded}`;
+          console.log('🌐 URL finale:', finalUrl.substring(0, 100) + '...');
+          window.open(finalUrl, '_blank');
           setTimeout(() => els.status.textContent = '', 3000);
         } else {
           // MÉTHODE 2: localStorage (conversations longues)
+          console.log('💾 Méthode localStorage, longueur:', conversationText.length);
           try {
             localStorage.setItem('brightness_conversation', conversationText);
             localStorage.setItem('brightness_timestamp', Date.now().toString());
+            console.log('✅ Données stockées dans localStorage');
             els.status.textContent = 'Transfert de votre conversation vers le formulaire...';
-            window.open(`${href}#chat-export`, '_blank');
+            const finalUrl = `${href}#chat-export`;
+            console.log('🌐 URL avec hash:', finalUrl);
+            window.open(finalUrl, '_blank');
             setTimeout(() => els.status.textContent = '', 3000);
           } catch(err) {
-            console.error('Erreur localStorage:', err);
+            console.error('❌ Erreur localStorage:', err);
             // Fallback: ouvrir normalement
             window.open(href, '_blank');
           }
