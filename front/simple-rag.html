@@ -63,14 +63,13 @@
       <textarea id="input" placeholder="Votre question… (Entrée = envoyer)"></textarea>
       <button id="stop" class="btn hidden">Stop</button>
       <button id="send" class="btn primary">Envoyer</button>
-      <button id="contact" class="btn" title="Transmettre cette conversation à Brightness Institute">📧 Contact</button>
     </div>
     <div class="row"><span id="status" class="hint"></span></div>
   </footer>
 </div>
 <script>
 (function(){
-  const els = { logo:document.getElementById('logo'), title:document.getElementById('title'), chat:document.getElementById('chat'), input:document.getElementById('input'), send:document.getElementById('send'), stop:document.getElementById('stop'), status:document.getElementById('status'), contact:document.getElementById('contact') };
+  const els = { logo:document.getElementById('logo'), title:document.getElementById('title'), chat:document.getElementById('chat'), input:document.getElementById('input'), send:document.getElementById('send'), stop:document.getElementById('stop'), status:document.getElementById('status') };
   let abortController = null;
 
   let cfg = { title:'Chat RAG', logoUrl:'', apiUrl:'', searchUrl:'', apiKey:'', brain_id:'', model:'', temperature:0, withHistory:true, system:'', consigne:'', activate_source:false, initialisation:'' };
@@ -190,52 +189,61 @@
   });
   els.input.addEventListener('keydown', e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); handleSend(); } });
 
-  // Gestion du bouton Contact Brightness
-  els.contact.addEventListener('click', ()=> {
-    if(history.length === 0 || (history.length === 1 && history[0].role === 'assistant')){
-      alert('Aucune conversation à transmettre. Commencez par poser une question.');
-      return;
-    }
-    
-    // Formatter la conversation
-    const dateStr = new Date().toLocaleString('fr-FR', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric', 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-    
-    const conversationText = `Conversation du ${dateStr}\n\n` +
-      history.map(m => {
-        const role = m.role === 'user' ? '👤 Client' : '🤖 Assistant Brightness';
-        return `${role}:\n${m.content}`;
-      }).join('\n\n─────────────────\n\n');
-    
-    // Vérifier la longueur pour l'URL (limite ~2000 caractères)
-    const encoded = encodeURIComponent(conversationText);
-    
-    if(encoded.length < 1800){
-      // MÉTHODE 1: URL parameters (conversations courtes)
-      els.status.textContent = 'Ouverture du formulaire de contact...';
-      window.open(`https://www.brightness-institute.fr/contact?conversation=${encoded}`, '_blank');
-      setTimeout(() => els.status.textContent = '', 3000);
-    } else {
-      // MÉTHODE 2: localStorage (conversations longues)
-      try {
-        localStorage.setItem('brightness_conversation', conversationText);
-        localStorage.setItem('brightness_timestamp', Date.now().toString());
-        els.status.textContent = 'Transfert de la conversation...';
-        window.open('https://www.brightness-institute.fr/contact#chat-export', '_blank');
-        setTimeout(() => els.status.textContent = '', 3000);
-      } catch(e) {
-        alert('Erreur lors du transfert de la conversation. Veuillez réessayer.');
-        console.error('Erreur localStorage:', e);
+  // Intercepter les clics sur les liens Brightness Contact
+  function setupBrightnessLinks() {
+    els.chat.addEventListener('click', (e) => {
+      // Vérifier si c'est un lien
+      const link = e.target.closest('a');
+      if (!link) return;
+      
+      // Vérifier si c'est le lien Brightness Contact
+      const href = link.getAttribute('href');
+      if (href && href.includes('brightness-institute.fr/contact')) {
+        e.preventDefault(); // Empêcher l'ouverture normale
+        
+        // Formatter la conversation
+        const dateStr = new Date().toLocaleString('fr-FR', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        
+        const conversationText = `Conversation du ${dateStr}\n\n` +
+          history.map(m => {
+            const role = m.role === 'user' ? '👤 Client' : '🤖 Assistant Brightness';
+            return `${role}:\n${m.content}`;
+          }).join('\n\n─────────────────\n\n');
+        
+        // Vérifier la longueur pour l'URL (limite ~2000 caractères)
+        const encoded = encodeURIComponent(conversationText);
+        
+        if(encoded.length < 1800){
+          // MÉTHODE 1: URL parameters (conversations courtes)
+          els.status.textContent = 'Ouverture du formulaire de contact avec votre conversation...';
+          window.open(`${href}?conversation=${encoded}`, '_blank');
+          setTimeout(() => els.status.textContent = '', 3000);
+        } else {
+          // MÉTHODE 2: localStorage (conversations longues)
+          try {
+            localStorage.setItem('brightness_conversation', conversationText);
+            localStorage.setItem('brightness_timestamp', Date.now().toString());
+            els.status.textContent = 'Transfert de votre conversation vers le formulaire...';
+            window.open(`${href}#chat-export`, '_blank');
+            setTimeout(() => els.status.textContent = '', 3000);
+          } catch(err) {
+            console.error('Erreur localStorage:', err);
+            // Fallback: ouvrir normalement
+            window.open(href, '_blank');
+          }
+        }
       }
-    }
-  });
+    });
+  }
 
   async function init(){
+    setupBrightnessLinks();
     await loadConfig();
     if(cfg.initialisation && cfg.initialisation.trim()){
       const { textEl }=renderMessage('assistant','');
