@@ -243,36 +243,18 @@
           minute: '2-digit' 
         });
         
-        let conversationText = `Conversation du ${dateStr}\n\n`;
-        let messages = [];
+        // D'abord, construire la conversation COMPLÈTE
+        const fullConversation = `Conversation du ${dateStr}\n\n` +
+          history.map(m => {
+            const role = m.role === 'user' ? '👤 Client' : '🤖 Assistant';
+            return `${role}:\n${m.content}`;
+          }).join('\n\n─────────────────\n\n');
         
-        // Construire en partant des DERNIERS messages (les plus récents)
-        for (let i = history.length - 1; i >= 0; i--) {
-          const m = history[i];
-          const role = m.role === 'user' ? '👤 Client' : '🤖 Assistant';
-          const messageText = `${role}:\n${m.content}\n\n─────────────────\n\n`;
-          
-          // Tester si l'ajout dépasse la limite
-          const testText = conversationText + messages.join('') + messageText;
-          const encoded = encodeURIComponent(testText);
-          
-          if (encoded.length > 9500) {
-            console.log(`⚠️ Limite atteinte - ${i + 1} anciens messages omis`);
-            conversationText += `[...] ${i + 1} message${i > 0 ? 's' : ''} ancien${i > 0 ? 's' : ''} omis pour raisons de taille\n\n─────────────────\n\n`;
-            break;
-          }
-          
-          // Ajouter au début (car on lit en sens inverse)
-          messages.unshift(messageText);
-        }
+        console.log('📊 Conversation complète:', fullConversation.length, 'caractères');
         
-        conversationText += messages.join('');
-        
-        console.log('📊 Longueur conversation:', conversationText.length, 'caractères');
-        
-        // Encoder pour URL
-        const encoded = encodeURIComponent(conversationText);
-        console.log('📊 Longueur encodée:', encoded.length, 'caractères');
+        // Encoder la conversation complète
+        const encodedFull = encodeURIComponent(fullConversation);
+        console.log('📊 Longueur encodée:', encodedFull.length, 'caractères');
         
         // S'assurer que l'URL est complète
         let fullUrl = href;
@@ -280,12 +262,27 @@
           fullUrl = 'https://www.brightness-institute.fr/contact';
         }
         
-        // Toujours utiliser URL parameters
-        const finalUrl = `${fullUrl}?conversation=${encoded}`;
-        console.log('🌐 Ouverture:', finalUrl.substring(0, 80) + '...');
-        
-        els.status.textContent = 'Ouverture du formulaire avec votre conversation...';
-        window.open(finalUrl, '_blank');
+        // Choix automatique de la méthode
+        if (encodedFull.length < 9500) {
+          // MÉTHODE URL : Conversations courtes/moyennes (conversation COMPLÈTE)
+          const finalUrl = `${fullUrl}?conversation=${encodedFull}`;
+          console.log('🌐 Méthode URL - Conversation COMPLÈTE (' + fullConversation.length + ' car.)');
+          els.status.textContent = 'Ouverture du formulaire avec votre conversation complète...';
+          window.open(finalUrl, '_blank');
+        } else {
+          // MÉTHODE localStorage : Conversations longues (conversation COMPLÈTE aussi)
+          console.log('💾 Méthode localStorage - Conversation COMPLÈTE (' + fullConversation.length + ' car.)');
+          try {
+            localStorage.setItem('brightness_conversation', fullConversation);
+            localStorage.setItem('brightness_timestamp', Date.now().toString());
+            console.log('✅ Conversation COMPLÈTE stockée dans localStorage');
+            els.status.textContent = 'Transfert de votre conversation complète...';
+            window.open(`${fullUrl}#chat-export`, '_blank');
+          } catch(e) {
+            console.error('❌ Erreur localStorage:', e);
+            alert('Erreur : impossible de stocker la conversation. Veuillez raccourcir vos échanges.');
+          }
+        }
         
         setTimeout(() => els.status.textContent = '', 3000);
       }

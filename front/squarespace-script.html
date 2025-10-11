@@ -3,10 +3,10 @@
 (function(){
   'use strict';
   
-  console.log('🟢 Brightness Script V7 - Textarea');
+  console.log('🟢 Brightness Script V8 - Textarea + localStorage');
   
-  // Parsing manuel du paramètre conversation
-  function getConversation() {
+  // Parsing manuel du paramètre conversation (URL)
+  function getFromUrl() {
     const search = window.location.search;
     if (!search) return null;
     
@@ -14,18 +14,51 @@
     if (match && match[1]) {
       try {
         const decoded = decodeURIComponent(match[1]);
-        console.log('✅ Conversation trouvée:', decoded.length, 'caractères');
+        console.log('✅ Conversation URL:', decoded.length, 'caractères');
         return decoded;
       } catch(e) {
-        console.log('❌ Erreur décodage:', e.message);
+        console.log('❌ Erreur décodage URL:', e.message);
       }
     }
-    
-    console.log('ℹ️ Pas de conversation dans l\'URL');
     return null;
   }
   
-  const conversation = getConversation();
+  // Récupération depuis localStorage
+  function getFromStorage() {
+    if (window.location.hash !== '#chat-export') return null;
+    
+    try {
+      const stored = localStorage.getItem('brightness_conversation');
+      const timestamp = localStorage.getItem('brightness_timestamp');
+      
+      if (stored && timestamp) {
+        const age = Date.now() - parseInt(timestamp, 10);
+        
+        if (age < 300000) { // 5 minutes
+          console.log('💾 Conversation localStorage:', stored.length, 'caractères');
+          // Nettoyer immédiatement
+          localStorage.removeItem('brightness_conversation');
+          localStorage.removeItem('brightness_timestamp');
+          
+          // Nettoyer l'URL
+          if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.pathname);
+          }
+          
+          return stored;
+        } else {
+          console.log('⏱️ Conversation expirée (> 5 min)');
+          localStorage.removeItem('brightness_conversation');
+          localStorage.removeItem('brightness_timestamp');
+        }
+      }
+    } catch(e) {
+      console.log('❌ Erreur localStorage:', e.message);
+    }
+    return null;
+  }
+  
+  const conversation = getFromUrl() || getFromStorage();
   
   if (conversation) {
     // Attendre que le DOM soit prêt
@@ -57,7 +90,7 @@
             const notice = document.createElement('div');
             notice.className = 'brightness-notice';
             notice.style.cssText = 'background:#e8f5e9;border-left:4px solid #4caf50;padding:15px;margin:15px 0;border-radius:8px;font-size:14px;font-family:system-ui;';
-            notice.innerHTML = '<strong>✓ Conversation importée</strong><br>Votre échange avec l\'assistant a été pré-rempli dans "Demande spécifique" (' + conversation.length + ' caractères).';
+            notice.innerHTML = '<strong>✓ Conversation complète importée</strong><br>Votre échange avec l\'assistant a été pré-rempli dans "Demande spécifique" (' + conversation.length + ' caractères).';
             
             const firstField = form.querySelector('.field-list');
             if (firstField) {
