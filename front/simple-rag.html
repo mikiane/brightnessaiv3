@@ -313,5 +313,53 @@
   init();
 })();
 </script>
+
+<!-- Auto-resize iframe pour intégration Squarespace -->
+<script>
+(function(){
+  // Envoyer la hauteur du contenu à la page parente
+  function sendHeight() {
+    const height = Math.max(
+      document.documentElement.scrollHeight,
+      document.body.scrollHeight,
+      document.documentElement.offsetHeight,
+      document.body.offsetHeight
+    );
+    // Ajouter un padding pour éviter les scrollbars
+    const finalHeight = height + 20;
+    window.parent.postMessage({ 
+      type: 'brightnessResize', 
+      height: finalHeight 
+    }, '*');
+    console.log('📏 Hauteur envoyée au parent:', finalHeight + 'px');
+  }
+  
+  // Envoyer la hauteur au chargement
+  window.addEventListener('load', function() {
+    setTimeout(sendHeight, 500);
+  });
+  
+  // Observer les changements de contenu (nouveaux messages)
+  const observer = new MutationObserver(function() {
+    sendHeight();
+  });
+  
+  // Observer le chat pour les nouveaux messages
+  const chatElement = document.getElementById('chat');
+  if (chatElement) {
+    observer.observe(chatElement, {
+      childList: true,
+      subtree: true
+    });
+    console.log('👁️ Observer installé sur le chat');
+  }
+  
+  // Envoyer aussi lors du resize de fenêtre
+  window.addEventListener('resize', sendHeight);
+  
+  // Envoyer périodiquement au cas où (fallback)
+  setInterval(sendHeight, 2000);
+})();
+</script>
 </body>
 </html>

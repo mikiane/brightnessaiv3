@@ -1,105 +1,281 @@
 <!-- Brightness - Remplissage conversation dans formulaire -->
 <script>
-(function(){
-  'use strict';
-  
-  console.log('🟢 Brightness Script V13 - Simple + Soumission');
-  
-  // Parsing manuel du paramètre conversation
-  function getConversation() {
-    const search = window.location.search;
-    if (!search) return null;
-    
-    const match = search.match(/[?&]conversation=([^&]*)/);
-    if (match && match[1]) {
-      try {
-        const decoded = decodeURIComponent(match[1]);
-        console.log('✅ Conversation trouvée:', decoded.length, 'caractères');
-        return decoded;
-      } catch(e) {
-        console.log('❌ Erreur décodage:', e.message);
-      }
-    }
-    
-    console.log('ℹ️ Pas de conversation dans l\'URL');
-    return null;
-  }
-  
-  const conversation = getConversation();
-  
-  if (conversation) {
-    // Variable globale pour l'interception
-    window._brightnessConversation = conversation;
-    
-    window.addEventListener('DOMContentLoaded', function() {
-      console.log('📄 DOM chargé, recherche du textarea...');
+    (function(){
+      'use strict';
       
-      setTimeout(function() {
-        const textarea = document.querySelector('#textarea-9d89d3c5-7bc9-46d2-8fae-573e726fe183-field');
+      console.log('🟢 Brightness Script V16 - Simulation saisie native');
+      
+      // Parsing manuel du paramètre conversation
+      function getConversation() {
+        const search = window.location.search;
+        if (!search) return null;
         
-        if (textarea) {
-          // === REMPLISSAGE SIMPLE (celui qui marchait) ===
-          textarea.value = conversation;
-          
-          // Déclencher les événements
-          textarea.dispatchEvent(new Event('input', { bubbles: true }));
-          textarea.dispatchEvent(new Event('change', { bubbles: true }));
-          
-          console.log('✅ Textarea rempli avec', conversation.length, 'caractères');
-          
-          // === AJOUT : INTERCEPTION SOUMISSION pour l'email ===
-          const form = textarea.closest('form');
-          if (form) {
-            // Intercepter au moment du submit
-            form.addEventListener('submit', function(e) {
-              console.log('📤 SOUMISSION DÉTECTÉE');
-              // Re-forcer la valeur juste avant l'envoi
-              textarea.value = window._brightnessConversation;
-              console.log('📤 Valeur forcée avant envoi:', textarea.value.substring(0, 50) + '...');
-            }, true); // Capture phase = exécuté AVANT Squarespace
-            
-            // Intercepter aussi le onsubmit
-            const originalOnsubmit = form.onsubmit;
-            form.onsubmit = function(e) {
-              console.log('📤 onsubmit intercepté');
-              textarea.value = window._brightnessConversation;
-              console.log('📤 Valeur forcée (onsubmit)');
-              
-              if (originalOnsubmit) {
-                return originalOnsubmit.call(this, e);
-              }
-              return true;
-            };
-            
-            console.log('✅ Interception soumission installée');
+        const match = search.match(/[?&]conversation=([^&]*)/);
+        if (match && match[1]) {
+          try {
+            const decoded = decodeURIComponent(match[1]);
+            console.log('✅ Conversation trouvée:', decoded.length, 'caractères');
+            return decoded;
+          } catch(e) {
+            console.log('❌ Erreur décodage:', e.message);
           }
-          
-          // Scroll vers le champ
-          setTimeout(() => {
-            textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }, 500);
-          
-          // Bandeau de confirmation
-          if (form && !form.querySelector('.brightness-notice')) {
-            const notice = document.createElement('div');
-            notice.className = 'brightness-notice';
-            notice.style.cssText = 'background:#e8f5e9;border-left:4px solid #4caf50;padding:15px;margin:15px 0;border-radius:8px;font-size:14px;font-family:system-ui;';
-            notice.innerHTML = '<strong>✓ Conversation importée</strong><br>Votre échange a été pré-rempli dans "Demande spécifique" (' + conversation.length + ' caractères).';
-            
-            const firstField = form.querySelector('.field-list');
-            if (firstField) {
-              form.insertBefore(notice, firstField);
-            }
-            
-            console.log('✅ Bandeau affiché');
-          }
-        } else {
-          console.log('❌ Textarea non trouvé');
-          console.log('   Textareas disponibles:', document.querySelectorAll('textarea').length);
         }
-      }, 2000);
-    });
-  }
-})();
-</script>
-<!-- FIN Brightness -->
+        
+        console.log('ℹ️ Pas de conversation dans l\'URL');
+        return null;
+      }
+      
+      const conversation = getConversation();
+      
+      // Fonction pour simuler une vraie saisie utilisateur (compatible Squarespace)
+      function setNativeValue(element, value) {
+        const valueSetter = Object.getOwnPropertyDescriptor(element.__proto__, 'value').set;
+        const prototype = Object.getPrototypeOf(element);
+        const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value').set;
+        
+        if (valueSetter && valueSetter !== prototypeValueSetter) {
+          prototypeValueSetter.call(element, value);
+        } else {
+          valueSetter.call(element, value);
+        }
+        
+        // Déclencher tous les événements nécessaires pour Squarespace
+        element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+        element.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, cancelable: true }));
+        element.dispatchEvent(new Event('blur', { bubbles: true, cancelable: true }));
+        
+        console.log('✅ Valeur définie de manière native');
+      }
+      
+      if (conversation) {
+        // Variable globale pour l'interception
+        window._brightnessConversation = conversation;
+        window._brightnessProtectionActive = true;
+        
+        window.addEventListener('DOMContentLoaded', function() {
+          console.log('📄 DOM chargé, recherche du textarea...');
+          
+          setTimeout(function() {
+            const textarea = document.querySelector('#textarea-9d89d3c5-7bc9-46d2-8fae-573e726fe183-field');
+            
+            if (textarea) {
+              // Fonction pour forcer la valeur avec simulation native
+              function forceValue() {
+                if (window._brightnessProtectionActive && textarea.value !== conversation) {
+                  setNativeValue(textarea, conversation);
+                  console.log('🔒 Valeur restaurée (native)');
+                }
+              }
+              
+              // === REMPLISSAGE INITIAL avec délai pour Squarespace ===
+              setTimeout(function() {
+                setNativeValue(textarea, conversation);
+                console.log('✅ Textarea rempli avec', conversation.length, 'caractères (mode natif)');
+                
+                // Forcer focus puis blur pour valider
+                textarea.focus();
+                setTimeout(function() {
+                  textarea.blur();
+                }, 100);
+              }, 100);
+              
+              // === PROTECTION CONTINUE : MutationObserver ===
+              const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                  if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                    forceValue();
+                  }
+                });
+              });
+              observer.observe(textarea, { attributes: true, attributeOldValue: true });
+              console.log('✅ MutationObserver installé');
+              
+              // === PROTECTION CONTINUE : Surveillance périodique ===
+              const watchInterval = setInterval(function() {
+                forceValue();
+              }, 500);
+              console.log('✅ Surveillance périodique activée (500ms)');
+              
+              // === PROTECTION : Événements du formulaire ===
+              const form = textarea.closest('form');
+              if (form) {
+                // Surveiller tous les champs du formulaire
+                const allInputs = form.querySelectorAll('input, select, textarea');
+                allInputs.forEach(function(input) {
+                  if (input !== textarea) {
+                    input.addEventListener('focus', forceValue);
+                    input.addEventListener('blur', forceValue);
+                    input.addEventListener('change', forceValue);
+                    input.addEventListener('input', forceValue);
+                  }
+                });
+                console.log('✅ Protection sur', allInputs.length, 'champs du formulaire');
+                
+                // === INTERCEPTION SOUMISSION ULTRA RENFORCÉE ===
+                
+                // Stocker le name/id du textarea pour FormData
+                const textareaFieldName = textarea.getAttribute('name') || textarea.id;
+                console.log('🔑 Nom du champ textarea:', textareaFieldName);
+                
+                // === INTERCEPTION FormData GLOBALE ===
+                const originalFormData = window.FormData;
+                window.FormData = function(formElement) {
+                  console.log('📦 NEW FormData appelé');
+                  const formData = new originalFormData(formElement);
+                  
+                  // Logger tout le contenu pour debug
+                  console.log('📦 FormData créé, inspection...');
+                  for (let pair of formData.entries()) {
+                    console.log('  📋', pair[0], '=', pair[1] ? pair[1].substring(0, 50) + '...' : '(vide)');
+                  }
+                  
+                  // Si le textarea est vide dans le FormData, forcer notre conversation
+                  const currentValue = formData.get(textareaFieldName);
+                  if (!currentValue || currentValue !== conversation) {
+                    console.log('⚠️ Champ manquant ou différent, injection de la conversation');
+                    formData.set(textareaFieldName, conversation);
+                    console.log('✅ Conversation injectée dans FormData');
+                  }
+                  
+                  return formData;
+                };
+                console.log('✅ FormData globalement intercepté');
+                
+                // === INTERCEPTION XMLHttpRequest.send ===
+                const originalXHRSend = XMLHttpRequest.prototype.send;
+                
+                XMLHttpRequest.prototype.send = function(data) {
+                  console.log('🌐 XHR.send() intercepté');
+                  console.log('🌐 Type de data:', data ? data.constructor.name : 'null');
+                  
+                  // Si c'est un FormData, injecter la conversation
+                  if (data && data.constructor.name === 'FormData') {
+                    console.log('🌐 C\'est un FormData!');
+                    const currentValue = data.get(textareaFieldName);
+                    console.log('🌐 Valeur actuelle du champ:', currentValue ? currentValue.substring(0, 50) + '...' : '(vide)');
+                    
+                    if (!currentValue || currentValue !== conversation) {
+                      data.set(textareaFieldName, conversation);
+                      console.log('✅ Conversation injectée dans XHR FormData');
+                    }
+                  }
+                  
+                  // Aussi forcer dans le textarea DOM au cas où
+                  setNativeValue(textarea, conversation);
+                  console.log('✅ Textarea DOM forcé avant XHR');
+                  
+                  return originalXHRSend.call(this, data);
+                };
+                
+                // === INTERCEPTION fetch ===
+                const originalFetch = window.fetch;
+                window.fetch = function(url, options) {
+                  console.log('🌐 fetch() intercepté');
+                  console.log('🌐 URL:', url);
+                  
+                  if (options && options.body) {
+                    console.log('🌐 Body type:', options.body.constructor.name);
+                    
+                    if (options.body.constructor.name === 'FormData') {
+                      console.log('🌐 C\'est un FormData dans fetch!');
+                      const currentValue = options.body.get(textareaFieldName);
+                      console.log('🌐 Valeur actuelle:', currentValue ? currentValue.substring(0, 50) + '...' : '(vide)');
+                      
+                      if (!currentValue || currentValue !== conversation) {
+                        options.body.set(textareaFieldName, conversation);
+                        console.log('✅ Conversation injectée dans fetch FormData');
+                      }
+                    }
+                  }
+                  
+                  // Forcer dans le DOM aussi
+                  setNativeValue(textarea, conversation);
+                  console.log('✅ Textarea DOM forcé avant fetch');
+                  
+                  return originalFetch.apply(this, arguments);
+                };
+                
+                // === INTERCEPTION événements submit ===
+                form.addEventListener('submit', function(e) {
+                  console.log('📤 SUBMIT (capture) - Forçage final');
+                  setNativeValue(textarea, conversation);
+                  
+                  // Surveillance hyper-aggressive pendant 3 secondes
+                  const hyperWatch = setInterval(function() {
+                    if (textarea.value !== conversation) {
+                      setNativeValue(textarea, conversation);
+                      console.log('🔒 Restauration hyper-agressive');
+                    }
+                  }, 50);
+                  
+                  setTimeout(function() { clearInterval(hyperWatch); }, 3000);
+                }, true);
+                
+                form.addEventListener('submit', function(e) {
+                  console.log('📤 SUBMIT (bubble) - Forçage final');
+                  setNativeValue(textarea, conversation);
+                }, false);
+                
+                console.log('✅ Toutes les interceptions installées');
+              }
+              
+              // === PROTECTION : Événements directs sur textarea ===
+              textarea.addEventListener('blur', function() {
+                setTimeout(forceValue, 50);
+              });
+              textarea.addEventListener('change', function() {
+                setTimeout(forceValue, 50);
+              });
+              
+              // === PROTECTION : Clic sur textarea (au cas où l'utilisateur voudrait éditer) ===
+              let userIsEditing = false;
+              textarea.addEventListener('focus', function() {
+                console.log('👤 Focus sur textarea');
+                userIsEditing = true;
+                setTimeout(function() { userIsEditing = false; }, 5000); // Délai de 5s pour éditer
+              });
+              
+              textarea.addEventListener('keydown', function() {
+                console.log('⌨️ Utilisateur tape dans le textarea');
+                userIsEditing = true;
+                setTimeout(function() { userIsEditing = false; }, 5000);
+              });
+              
+              // Modifier la fonction forceValue pour ne pas écraser si l'utilisateur édite
+              const originalForceValue = forceValue;
+              forceValue = function() {
+                if (!userIsEditing) {
+                  originalForceValue();
+                }
+              };
+              
+              // Scroll vers le champ
+              setTimeout(() => {
+                textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 500);
+              
+              // Bandeau de confirmation avec bouton debug
+              if (form && !form.querySelector('.brightness-notice')) {
+                const notice = document.createElement('div');
+                notice.className = 'brightness-notice';
+                notice.style.cssText = 'background:#e8f5e9;border-left:4px solid #4caf50;padding:15px;margin:15px 0;border-radius:8px;font-size:14px;font-family:system-ui;';
+                notice.innerHTML = '<strong>✓ Conversation importée (mode natif)</strong><br>Votre échange a été pré-rempli dans "Demande spécifique". Vous pouvez préciser certains points si vous le souhaitez.';
+                
+                const firstField = form.querySelector('.field-list');
+                if (firstField) {
+                  form.insertBefore(notice, firstField);
+                }
+                
+                console.log('✅ Bandeau affiché');
+              }
+            } else {
+              console.log('❌ Textarea non trouvé');
+              console.log('   Textareas disponibles:', document.querySelectorAll('textarea').length);
+            }
+          }, 2000);
+        });
+      }
+    })();
+    </script>
+    <!-- FIN Brightness -->

@@ -1,0 +1,91 @@
+<!-- 
+=================================================================
+  CODE À COPIER DANS SQUARESPACE (Bloc Code)
+  Auto-resize iframe pour Brightness AI Chat
+=================================================================
+-->
+
+<!-- L'iframe qui contient le chat -->
+<iframe
+  id="ba-avatar"
+  src="https://dev.brightness-agency.com/avatar/?index=bi_adaptability3"
+  style="
+    width: 100%;
+    max-width: 900px;
+    height: 600px;
+    border: 0;
+    border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.15);
+    transition: height 0.3s ease;
+    display: block;
+    margin: 0 auto;
+  "
+  loading="lazy"
+  allow="clipboard-write"
+></iframe>
+
+<!-- Script d'auto-redimensionnement -->
+<script>
+(function(){
+  'use strict';
+  
+  console.log('🟢 Brightness iframe auto-resize activé');
+  
+  const iframe = document.getElementById('ba-avatar');
+  
+  if (!iframe) {
+    console.error('❌ Iframe #ba-avatar non trouvée');
+    return;
+  }
+  
+  // Écouter les messages de l'iframe
+  window.addEventListener('message', function(event) {
+    // Vérifier l'origine pour la sécurité (optionnel en dev)
+    if (event.origin !== 'https://dev.brightness-agency.com') {
+      console.log('⚠️ Message reçu d\'une origine non autorisée:', event.origin);
+      return;
+    }
+    
+    // Vérifier que c'est un message de resize
+    if (event.data && event.data.type === 'brightnessResize') {
+      const newHeight = event.data.height;
+      
+      // Appliquer la nouvelle hauteur
+      iframe.style.height = newHeight + 'px';
+      
+      console.log('✅ Iframe redimensionnée:', newHeight + 'px');
+      
+      // Optionnel : scroller vers le bas de l'iframe si nécessaire
+      // pour garder la zone de saisie visible
+      const iframeRect = iframe.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      
+      // Si le bas de l'iframe est hors de vue, scroller doucement
+      if (iframeRect.bottom > windowHeight) {
+        window.scrollTo({
+          top: window.scrollY + (iframeRect.bottom - windowHeight) + 50,
+          behavior: 'smooth'
+        });
+      }
+    }
+  });
+  
+  console.log('👂 Écoute des messages postMessage activée');
+})();
+</script>
+
+<!-- 
+=================================================================
+  NOTES D'UTILISATION
+=================================================================
+
+1. Copiez tout ce code dans un bloc "Code" de Squarespace
+2. Le chat se redimensionnera automatiquement à chaque nouveau message
+3. La hauteur initiale est de 600px, puis s'adapte au contenu
+4. Le scroll se fait automatiquement pour garder la zone de saisie visible
+
+Pour changer l'index du chat, modifiez : ?index=bi_adaptability3
+
+=================================================================
+-->
+
