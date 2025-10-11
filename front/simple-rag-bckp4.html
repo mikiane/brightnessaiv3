@@ -7,11 +7,11 @@
   <style>
     :root{ --bg:#0B0B0C; --panel:#15161A; --muted:#24262B; --text:#E8E9EC; --accent:#D73C2C; --subtle:#9AA0A6; --radius:10px; --shadow:0 4px 20px rgba(0,0,0,.35); }
     body{margin:0; background:var(--bg); color:var(--text); font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial}
-    .wrap{display:flex; flex-direction:column; height:100vh; overflow:hidden}
-    header{display:flex; gap:10px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--muted); background:var(--panel); flex-shrink:0}
+    .wrap{display:flex; flex-direction:column; min-height:100vh}
+    header{display:flex; gap:10px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--muted); background:var(--panel)}
     header img{height:28px}
-    main{flex:1; display:flex; flex-direction:column; max-width:900px; margin:0 auto; width:100%; overflow:hidden; padding-bottom:140px}
-    .chat{flex:1; padding:14px; overflow-y:auto; overflow-x:hidden}
+    main{flex:1; display:flex; flex-direction:column; max-width:900px; margin:0 auto; width:100%}
+    .chat{flex:1; padding:14px; overflow:auto}
     .msg{display:flex; gap:10px; margin:10px 0}
     .role{width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff}
     .role.user{background:#3A3F46}
@@ -24,9 +24,9 @@
     .content.md ul, .content.md ol{margin:8px 0 8px 22px}
     .content.md a{color:var(--accent); font-weight:700; text-decoration:none}
     .content.md a:hover{text-decoration:underline}
-    .composer{position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:900px; padding:10px 14px; border-top:1px solid var(--muted); background:var(--panel); z-index:100; box-sizing:border-box}
+    .composer{padding:10px 14px; border-top:1px solid var(--muted); background:var(--panel)}
     .row{display:flex; gap:10px; align-items:center}
-    textarea{flex:1; resize:vertical; min-height:60px; max-height:150px; border:1px solid var(--muted); background:var(--panel); color:var(--text); border-radius:var(--radius); padding:10px; box-shadow:var(--shadow)}
+    textarea{flex:1; resize:vertical; min-height:60px; max-height:40vh; border:1px solid var(--muted); background:var(--panel); color:var(--text); border-radius:var(--radius); padding:10px; box-shadow:var(--shadow)}
     .btn{border:1px solid var(--muted); background:var(--panel); color:var(--text); padding:10px 12px; border-radius:var(--radius); cursor:pointer}
     .btn.primary{background:linear-gradient(135deg, var(--accent), #b32f23); border:none; color:#fff}
     .hidden{display:none}
