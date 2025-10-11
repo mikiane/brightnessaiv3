@@ -12,7 +12,7 @@
   style="
     width: 100%;
     max-width: 900px;
-    height: 800px;
+    height: 700px;
     border: 0;
     border-radius: 12px;
     box-shadow: 0 6px 24px rgba(0,0,0,.15);
@@ -40,9 +40,8 @@
   
   // Écouter les messages de l'iframe
   window.addEventListener('message', function(event) {
-    // Vérifier l'origine pour la sécurité (optionnel en dev)
+    // Vérifier l'origine pour la sécurité
     if (event.origin !== 'https://dev.brightness-agency.com') {
-      console.log('⚠️ Message reçu d\'une origine non autorisée:', event.origin);
       return;
     }
     
@@ -50,27 +49,18 @@
     if (event.data && event.data.type === 'brightnessResize') {
       const newHeight = event.data.height;
       
+      // Limiter la hauteur max pour éviter les problèmes
+      const maxHeight = 2000;
+      const finalHeight = Math.min(newHeight, maxHeight);
+      
       // Appliquer la nouvelle hauteur
-      iframe.style.height = newHeight + 'px';
+      iframe.style.height = finalHeight + 'px';
       
-      console.log('✅ Iframe redimensionnée:', newHeight + 'px');
-      
-      // Optionnel : scroller vers le bas de l'iframe si nécessaire
-      // pour garder la zone de saisie visible
-      const iframeRect = iframe.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      
-      // Si le bas de l'iframe est hors de vue, scroller doucement
-      if (iframeRect.bottom > windowHeight) {
-        window.scrollTo({
-          top: window.scrollY + (iframeRect.bottom - windowHeight) + 50,
-          behavior: 'smooth'
-        });
-      }
+      console.log('✅ Iframe redimensionnée:', finalHeight + 'px');
     }
   });
   
-  console.log('👂 Écoute des messages postMessage activée');
+  console.log('👂 Écoute des messages activée');
 })();
 </script>
 

@@ -6,7 +6,7 @@
   <title>Chat RAG</title>
   <style>
     :root{ --bg:#0B0B0C; --panel:#15161A; --muted:#24262B; --text:#E8E9EC; --accent:#D73C2C; --subtle:#9AA0A6; --radius:10px; --shadow:0 4px 20px rgba(0,0,0,.35); }
-    body{margin:0; padding-bottom:20px; background:var(--bg); color:var(--text); font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial}
+    body{margin:0; background:var(--bg); color:var(--text); font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial}
     .wrap{display:flex; flex-direction:column; min-height:100vh}
     header{display:flex; gap:10px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--muted); background:var(--panel)}
     header img{height:28px}
@@ -24,7 +24,7 @@
     .content.md ul, .content.md ol{margin:8px 0 8px 22px}
     .content.md a{color:var(--accent); font-weight:700; text-decoration:none}
     .content.md a:hover{text-decoration:underline}
-    .composer{padding:10px 14px 20px 14px; border-top:1px solid var(--muted); background:var(--panel)}
+    .composer{padding:10px 14px; border-top:1px solid var(--muted); background:var(--panel)}
     .row{display:flex; gap:10px; align-items:center}
     textarea{flex:1; resize:vertical; min-height:60px; max-height:40vh; border:1px solid var(--muted); background:var(--panel); color:var(--text); border-radius:var(--radius); padding:10px; box-shadow:var(--shadow)}
     .btn{border:1px solid var(--muted); background:var(--panel); color:var(--text); padding:10px 12px; border-radius:var(--radius); cursor:pointer}
@@ -317,48 +317,49 @@
 <!-- Auto-resize iframe pour intégration Squarespace -->
 <script>
 (function(){
-  // Envoyer la hauteur du contenu à la page parente
+  let lastHeight = 0;
+  let debounceTimer;
+  
+  // Envoyer la hauteur seulement si elle a changé
   function sendHeight() {
-    const height = Math.max(
-      document.documentElement.scrollHeight,
-      document.body.scrollHeight,
-      document.documentElement.offsetHeight,
-      document.body.offsetHeight
-    );
-    // Ajouter un padding généreux pour éviter que le bas soit coupé
-    const finalHeight = height + 80;
-    window.parent.postMessage({ 
-      type: 'brightnessResize', 
-      height: finalHeight 
-    }, '*');
-    console.log('📏 Hauteur envoyée au parent:', finalHeight + 'px');
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(function() {
+      const height = document.body.scrollHeight + 100;
+      
+      // N'envoyer que si la hauteur a vraiment changé (plus de 50px de différence)
+      if (Math.abs(height - lastHeight) > 50) {
+        lastHeight = height;
+        window.parent.postMessage({ 
+          type: 'brightnessResize', 
+          height: height 
+        }, '*');
+        console.log('📏 Hauteur envoyée:', height + 'px');
+      }
+    }, 300); // Attendre 300ms avant d'envoyer
   }
   
-  // Envoyer la hauteur au chargement
+  // Envoyer au chargement
   window.addEventListener('load', function() {
-    setTimeout(sendHeight, 500);
+    setTimeout(sendHeight, 1000);
   });
   
-  // Observer les changements de contenu (nouveaux messages)
-  const observer = new MutationObserver(function() {
-    sendHeight();
-  });
-  
-  // Observer le chat pour les nouveaux messages
+  // Observer SEULEMENT les nouveaux messages dans le chat
   const chatElement = document.getElementById('chat');
   if (chatElement) {
-    observer.observe(chatElement, {
-      childList: true,
-      subtree: true
+    const observer = new MutationObserver(function(mutations) {
+      // Vérifier qu'il s'agit bien d'un ajout de message
+      const hasNewMessage = mutations.some(function(m) {
+        return m.addedNodes.length > 0 && m.addedNodes[0].classList && m.addedNodes[0].classList.contains('msg');
+      });
+      
+      if (hasNewMessage) {
+        sendHeight();
+      }
     });
-    console.log('👁️ Observer installé sur le chat');
+    
+    observer.observe(chatElement, { childList: true });
+    console.log('👁️ Observer installé');
   }
-  
-  // Envoyer aussi lors du resize de fenêtre
-  window.addEventListener('resize', sendHeight);
-  
-  // Envoyer périodiquement au cas où (fallback)
-  setInterval(sendHeight, 2000);
 })();
 </script>
 </body>
