@@ -200,7 +200,7 @@
     }
     
     els.chat.addEventListener('click', (e) => {
-      console.log('🖱️ Clic détecté dans le chat', e.target);
+      console.log('🖱️ Clic détecté dans le chat');
       
       // Vérifier si c'est un lien
       const link = e.target.closest('a');
@@ -217,13 +217,13 @@
       const isBrightnessContact = href && (
         href.includes('brightness-institute.fr/contact') ||
         href.includes('brightness.fr/contact') ||
-        href === '/contact' // Pour les liens relatifs
+        href === '/contact'
       );
       
       if (isBrightnessContact) {
         console.log('✅ Lien Brightness détecté!');
-        e.preventDefault(); // Empêcher l'ouverture normale
-        e.stopPropagation(); // Empêcher la propagation
+        e.preventDefault();
+        e.stopPropagation();
         
         // Vérifier qu'il y a une conversation
         if (history.length === 0) {
@@ -243,16 +243,32 @@
           minute: '2-digit' 
         });
         
-        const conversationText = `Conversation du ${dateStr}\n\n` +
-          history.map(m => {
-            const role = m.role === 'user' ? '👤 Client' : '🤖 Assistant Brightness';
-            return `${role}:\n${m.content}`;
-          }).join('\n\n─────────────────\n\n');
+        let conversationText = `Conversation du ${dateStr}\n\n`;
+        
+        // Construire la conversation en limitant la taille
+        for (let i = 0; i < history.length; i++) {
+          const m = history[i];
+          const role = m.role === 'user' ? '👤 Client' : '🤖 Assistant';
+          const messageText = `${role}:\n${m.content}\n\n─────────────────\n\n`;
+          
+          // Tester si l'ajout dépasse la limite
+          const testText = conversationText + messageText;
+          const encoded = encodeURIComponent(testText);
+          
+          if (encoded.length > 1800) {
+            console.log(`⚠️ Limite atteinte à ${i + 1}/${history.length} messages`);
+            conversationText += `\n[...] Conversation tronquée (${history.length - i} messages omis pour raisons de taille)\n`;
+            break;
+          }
+          
+          conversationText += messageText;
+        }
         
         console.log('📊 Longueur conversation:', conversationText.length, 'caractères');
         
-        // Vérifier la longueur pour l'URL (limite ~2000 caractères)
+        // Encoder pour URL
         const encoded = encodeURIComponent(conversationText);
+        console.log('📊 Longueur encodée:', encoded.length, 'caractères');
         
         // S'assurer que l'URL est complète
         let fullUrl = href;
@@ -260,32 +276,14 @@
           fullUrl = 'https://www.brightness-institute.fr/contact';
         }
         
-        if(encoded.length < 1800){
-          // MÉTHODE 1: URL parameters (conversations courtes)
-          console.log('📤 Méthode URL, longueur encodée:', encoded.length);
-          els.status.textContent = 'Ouverture du formulaire de contact avec votre conversation...';
-          const finalUrl = `${fullUrl}?conversation=${encoded}`;
-          console.log('🌐 URL finale:', finalUrl.substring(0, 100) + '...');
-          window.open(finalUrl, '_blank');
-          setTimeout(() => els.status.textContent = '', 3000);
-        } else {
-          // MÉTHODE 2: localStorage (conversations longues)
-          console.log('💾 Méthode localStorage, longueur:', conversationText.length);
-          try {
-            localStorage.setItem('brightness_conversation', conversationText);
-            localStorage.setItem('brightness_timestamp', Date.now().toString());
-            console.log('✅ Données stockées dans localStorage');
-            els.status.textContent = 'Transfert de votre conversation vers le formulaire...';
-            const finalUrl = `${fullUrl}#chat-export`;
-            console.log('🌐 URL avec hash:', finalUrl);
-            window.open(finalUrl, '_blank');
-            setTimeout(() => els.status.textContent = '', 3000);
-          } catch(err) {
-            console.error('❌ Erreur localStorage:', err);
-            // Fallback: ouvrir normalement
-            window.open(fullUrl, '_blank');
-          }
-        }
+        // Toujours utiliser URL parameters
+        const finalUrl = `${fullUrl}?conversation=${encoded}`;
+        console.log('🌐 Ouverture:', finalUrl.substring(0, 80) + '...');
+        
+        els.status.textContent = 'Ouverture du formulaire avec votre conversation...';
+        window.open(finalUrl, '_blank');
+        
+        setTimeout(() => els.status.textContent = '', 3000);
       }
     });
   }
