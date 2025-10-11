@@ -1,147 +1,83 @@
+<!-- Brightness - Remplissage conversation dans formulaire -->
 <script>
-/**
- * Script Brightness - Récupération conversation chatbot
- * Version: 2.0 - Avec MutationObserver (URL uniquement)
- * 
- * INSTALLATION:
- * 1. Aller dans Squarespace
- * 2. Paramètres → Avancé → Injection de code
- * 3. Coller ce script dans la section FOOTER
- * 4. Enregistrer
- */
-
-(function() {
+(function(){
   'use strict';
   
-  const CONFIG = {
-    fieldName: 'SQF_EXPERT',
-    debug: true
-  };
+  console.log('🟢 Brightness Script V7 - Textarea');
   
-  function log(message, type = 'info') {
-    if (!CONFIG.debug) return;
-    const prefix = '🤖 [Brightness]';
-    console[type](`${prefix} ${message}`);
-  }
-  
-  function getUrlParameter(param) {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(param);
-  }
-  
-  function fillHiddenField(conversationData) {
-    const field = document.querySelector(`input[name="${CONFIG.fieldName}"]`);
+  // Parsing manuel du paramètre conversation
+  function getConversation() {
+    const search = window.location.search;
+    if (!search) return null;
     
-    if (field) {
-      field.value = conversationData;
-      log(`✅ Conversation injectée: ${conversationData.length} caractères`);
+    const match = search.match(/[?&]conversation=([^&]*)/);
+    if (match && match[1]) {
+      try {
+        const decoded = decodeURIComponent(match[1]);
+        console.log('✅ Conversation trouvée:', decoded.length, 'caractères');
+        return decoded;
+      } catch(e) {
+        console.log('❌ Erreur décodage:', e.message);
+      }
+    }
+    
+    console.log('ℹ️ Pas de conversation dans l\'URL');
+    return null;
+  }
+  
+  const conversation = getConversation();
+  
+  if (conversation) {
+    // Attendre que le DOM soit prêt
+    window.addEventListener('DOMContentLoaded', function() {
+      console.log('📄 DOM chargé, recherche du textarea...');
       
-      // Ajouter un bandeau visuel
-      const form = field.closest('form');
-      if (form && !form.querySelector('.brightness-notice')) {
-        const notice = document.createElement('div');
-        notice.className = 'brightness-notice';
-        notice.style.cssText = 'background:#e8f5e9;border-left:4px solid #4caf50;padding:12px;margin:15px 0;border-radius:4px;font-size:14px;font-family:system-ui;';
-        notice.innerHTML = '<strong>✓ Conversation importée</strong><br>Votre échange avec l\'assistant a été pré-rempli dans le formulaire.';
+      setTimeout(function() {
+        // Trouver le textarea "Demande spécifique" par son ID
+        const textarea = document.querySelector('#textarea-9d89d3c5-7bc9-46d2-8fae-573e726fe183-field');
         
-        // Insérer en haut du formulaire
-        const firstElement = form.querySelector('.field-list') || form.firstChild;
-        if (firstElement) {
-          form.insertBefore(notice, firstElement);
+        if (textarea) {
+          // Remplir le champ
+          textarea.value = conversation;
+          
+          // Déclencher les événements pour que Squarespace détecte le changement
+          textarea.dispatchEvent(new Event('input', { bubbles: true }));
+          textarea.dispatchEvent(new Event('change', { bubbles: true }));
+          
+          console.log('✅ Textarea rempli avec', conversation.length, 'caractères');
+          
+          // Scroll vers le champ pour que l'utilisateur le voie
+          setTimeout(() => {
+            textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 500);
+          
+          // Ajouter un bandeau de confirmation
+          const form = textarea.closest('form');
+          if (form && !form.querySelector('.brightness-notice')) {
+            const notice = document.createElement('div');
+            notice.className = 'brightness-notice';
+            notice.style.cssText = 'background:#e8f5e9;border-left:4px solid #4caf50;padding:15px;margin:15px 0;border-radius:8px;font-size:14px;font-family:system-ui;';
+            notice.innerHTML = '<strong>✓ Conversation importée</strong><br>Votre échange avec l\'assistant a été pré-rempli dans "Demande spécifique" (' + conversation.length + ' caractères).';
+            
+            const firstField = form.querySelector('.field-list');
+            if (firstField) {
+              form.insertBefore(notice, firstField);
+            }
+            
+            console.log('✅ Bandeau de confirmation affiché');
+          }
         } else {
-          form.appendChild(notice);
+          console.log('❌ Textarea "Demande spécifique" non trouvé');
+          console.log('   Textareas disponibles:', document.querySelectorAll('textarea').length);
+          
+          // Liste tous les textareas pour debug
+          document.querySelectorAll('textarea').forEach(ta => {
+            console.log('   - ID:', ta.id, 'Name:', ta.name);
+          });
         }
-      }
-      return true;
-    } else {
-      log(`❌ Champ "${CONFIG.fieldName}" non trouvé`);
-      
-      // Lister les champs disponibles pour debug
-      const allInputs = document.querySelectorAll('input[type="hidden"]');
-      if (allInputs.length > 0) {
-        log('Champs cachés disponibles:');
-        allInputs.forEach(inp => log(`  - ${inp.name || inp.id}`));
-      }
-      
-      return false;
-    }
-  }
-  
-  function attemptFill(conversationData) {
-    // Essai immédiat
-    if (fillHiddenField(conversationData)) {
-      log('Remplissage immédiat réussi');
-      return;
-    }
-    
-    // Si échec, utiliser MutationObserver
-    log('🔍 MutationObserver activé - attente du formulaire...');
-    
-    let attempts = 0;
-    const maxAttempts = 20; // 10 secondes max
-    
-    const observer = new MutationObserver((mutations, obs) => {
-      attempts++;
-      
-      const field = document.querySelector(`input[name="${CONFIG.fieldName}"]`);
-      if (field) {
-        log(`✅ Formulaire détecté après ${attempts} tentatives`);
-        fillHiddenField(conversationData);
-        obs.disconnect();
-      } else if (attempts >= maxAttempts) {
-        log('⏱️ Timeout: formulaire non détecté après 10s', 'warn');
-        obs.disconnect();
-      }
+      }, 2000); // 2 secondes pour être sûr que le formulaire est chargé
     });
-    
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-    
-    // Vérification périodique toutes les 500ms
-    const interval = setInterval(() => {
-      const field = document.querySelector(`input[name="${CONFIG.fieldName}"]`);
-      if (field) {
-        clearInterval(interval);
-        observer.disconnect();
-        fillHiddenField(conversationData);
-      }
-    }, 500);
-    
-    // Nettoyage après 10s
-    setTimeout(() => {
-      clearInterval(interval);
-      observer.disconnect();
-    }, 10000);
-  }
-  
-  // Initialisation
-  log('Script initialisé');
-  log('URL: ' + window.location.href);
-  
-  // Récupérer la conversation depuis l'URL
-  const conversationData = getUrlParameter('conversation');
-  
-  if (conversationData) {
-    try {
-      const decoded = decodeURIComponent(conversationData);
-      log(`Conversation trouvée dans URL (${decoded.length} caractères)`);
-      
-      // Attendre que le DOM soit prêt
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-          setTimeout(() => attemptFill(decoded), 500);
-        });
-      } else {
-        setTimeout(() => attemptFill(decoded), 500);
-      }
-    } catch (e) {
-      log('❌ Erreur décodage URL: ' + e.message, 'error');
-    }
-  } else {
-    log('Aucune conversation dans l\'URL');
   }
 })();
 </script>
-
+<!-- FIN Brightness -->
