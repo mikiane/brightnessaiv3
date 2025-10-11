@@ -262,26 +262,33 @@
           fullUrl = 'https://www.brightness-institute.fr/contact';
         }
         
-        // Choix automatique de la méthode
-        if (encodedFull.length < 9500) {
-          // MÉTHODE URL : Conversations courtes/moyennes (conversation COMPLÈTE)
+        // Toujours utiliser l'URL (limite très haute)
+        if (encodedFull.length < 20000) {
+          // MÉTHODE URL : Fonctionne pour presque toutes les conversations
           const finalUrl = `${fullUrl}?conversation=${encodedFull}`;
-          console.log('🌐 Méthode URL - Conversation COMPLÈTE (' + fullConversation.length + ' car.)');
+          console.log('🌐 Méthode URL - Conversation COMPLÈTE (' + fullConversation.length + ' car., encodé: ' + encodedFull.length + ')');
           els.status.textContent = 'Ouverture du formulaire avec votre conversation complète...';
           window.open(finalUrl, '_blank');
         } else {
-          // MÉTHODE localStorage : Conversations longues (conversation COMPLÈTE aussi)
-          console.log('💾 Méthode localStorage - Conversation COMPLÈTE (' + fullConversation.length + ' car.)');
-          try {
-            localStorage.setItem('brightness_conversation', fullConversation);
-            localStorage.setItem('brightness_timestamp', Date.now().toString());
-            console.log('✅ Conversation COMPLÈTE stockée dans localStorage');
-            els.status.textContent = 'Transfert de votre conversation complète...';
-            window.open(`${fullUrl}#chat-export`, '_blank');
-          } catch(e) {
-            console.error('❌ Erreur localStorage:', e);
-            alert('Erreur : impossible de stocker la conversation. Veuillez raccourcir vos échanges.');
+          // Si vraiment TROP long (très rare)
+          console.warn('⚠️ Conversation exceptionnellement longue (' + encodedFull.length + ' car. encodés)');
+          const confirmation = confirm('Votre conversation est très longue. Voulez-vous l\'envoyer tronquée (derniers messages) ?');
+          
+          if (confirmation) {
+            // Tronquer intelligemment en gardant les 15 derniers messages
+            const recentHistory = history.slice(-15);
+            const truncated = `Conversation du ${dateStr}\n\n[Les 15 derniers messages sur ${history.length} au total]\n\n─────────────────\n\n` +
+              recentHistory.map(m => {
+                const role = m.role === 'user' ? '👤 Client' : '🤖 Assistant';
+                return `${role}:\n${m.content}`;
+              }).join('\n\n─────────────────\n\n');
+            
+            const encodedTrunc = encodeURIComponent(truncated);
+            const finalUrl = `${fullUrl}?conversation=${encodedTrunc}`;
+            console.log('🌐 Version tronquée envoyée (15 derniers messages)');
+            window.open(finalUrl, '_blank');
           }
+          els.status.textContent = '';
         }
         
         setTimeout(() => els.status.textContent = '', 3000);
