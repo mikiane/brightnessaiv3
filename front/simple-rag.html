@@ -6,12 +6,12 @@
   <title>Chat RAG</title>
   <style>
     :root{ --bg:#0B0B0C; --panel:#15161A; --muted:#24262B; --text:#E8E9EC; --accent:#D73C2C; --subtle:#9AA0A6; --radius:10px; --shadow:0 4px 20px rgba(0,0,0,.35); }
-    body{margin:0; padding-bottom:30px; background:var(--bg); color:var(--text); font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial}
-    .wrap{display:flex; flex-direction:column; min-height:calc(100vh - 30px)}
+    body{margin:0; background:var(--bg); color:var(--text); font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial}
+    .wrap{display:flex; flex-direction:column; min-height:100vh}
     header{display:flex; gap:10px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--muted); background:var(--panel)}
     header img{height:28px}
     main{flex:1; display:flex; flex-direction:column; max-width:900px; margin:0 auto; width:100%}
-    .chat{flex:1; padding:14px; overflow:visible}
+    .chat{flex:1; padding:14px; overflow:auto}
     .msg{display:flex; gap:10px; margin:10px 0}
     .role{width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff}
     .role.user{background:#3A3F46}
@@ -82,15 +82,8 @@
     if(!cfg.apiUrl) els.status.textContent='Configuration manquante: apiUrl'; if(!cfg.searchUrl) els.status.textContent='Configuration manquante: searchUrl'; if(!cfg.brain_id) els.status.textContent='Configuration manquante: brain_id';
   }
 
-  function autoScroll(){ 
-    // Scroller la fenêtre vers le bas (maintenant que le chat n'a plus de scroll interne)
-    requestAnimationFrame(function() {
-      window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: 'smooth'
-      });
-    });
-  }
+  function atBottom(c,t=40){ return c.scrollHeight-c.scrollTop-c.clientHeight<t; }
+  function autoScroll(){ els.chat.scrollTop=els.chat.scrollHeight; }
   function $(tag, attrs={}, text=''){ const n=document.createElement(tag); Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v)); if(text) n.textContent=text; return n; }
   function renderMessage(role, content){
     const container=$('div',{class:'msg'});
@@ -98,9 +91,7 @@
     const contentEl=$('div');
     const textEl=$('div',{class:'content '+(role==='assistant'?'md':'user')}); if(role==='assistant') textEl.innerHTML=''; else textEl.textContent=content||'';
     contentEl.appendChild(textEl);
-    container.appendChild(roleEl); container.appendChild(contentEl); els.chat.appendChild(container); 
-    // Toujours scroller vers le bas lors d'un nouveau message
-    autoScroll();
+    container.appendChild(roleEl); container.appendChild(contentEl); els.chat.appendChild(container); if(atBottom(els.chat)) autoScroll();
     return { textEl, container, contentEl };
   }
 
@@ -320,55 +311,6 @@
   }
   
   init();
-})();
-</script>
-
-<!-- Auto-resize iframe pour intégration Squarespace -->
-<script>
-(function(){
-  let lastHeight = 0;
-  let debounceTimer;
-  
-  // Envoyer la hauteur seulement si elle a changé
-  function sendHeight() {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(function() {
-      const height = document.body.scrollHeight + 50; // Padding généreux pour la zone de saisie
-      
-      // N'envoyer que si la hauteur a vraiment changé (plus de 50px de différence)
-      if (Math.abs(height - lastHeight) > 50) {
-        lastHeight = height;
-        window.parent.postMessage({ 
-          type: 'brightnessResize', 
-          height: height 
-        }, '*');
-        console.log('📏 Hauteur envoyée:', height + 'px');
-      }
-    }, 300); // Attendre 300ms avant d'envoyer
-  }
-  
-  // Envoyer au chargement
-  window.addEventListener('load', function() {
-    setTimeout(sendHeight, 1000);
-  });
-  
-  // Observer SEULEMENT les nouveaux messages dans le chat
-  const chatElement = document.getElementById('chat');
-  if (chatElement) {
-    const observer = new MutationObserver(function(mutations) {
-      // Vérifier qu'il s'agit bien d'un ajout de message
-      const hasNewMessage = mutations.some(function(m) {
-        return m.addedNodes.length > 0 && m.addedNodes[0].classList && m.addedNodes[0].classList.contains('msg');
-      });
-      
-      if (hasNewMessage) {
-        sendHeight();
-      }
-    });
-    
-    observer.observe(chatElement, { childList: true });
-    console.log('👁️ Observer installé');
-  }
 })();
 </script>
 </body>
