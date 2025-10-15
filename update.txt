@@ -1,0 +1,136 @@
+**Voici quelques échanges avec l’IA et le comportement attendu :**
+
+**1/ Quand je pose la question : quelles formations individuelles peux tu me proposer?**
+
+**l’IA répond** 
+
+‘’’
+
+AI — Bonjour ! 🙂
+
+Brightness propose plusieurs formations individuelles conçues pour développer des compétences clés dans un monde en transformation. Voici les programmes que je peux vous présenter :
+
+🎤 L'Art du Talk
+
+Maîtriser la prise de parole inspirante
+
+Devenez un orateur digne des meilleurs TED Talks : structurer un message percutant, captiver votre audience, incarner votre propos avec authenticité. Idéal pour dirigeants, managers ou toute personne souhaitant gagner en impact à l'oral.
+
+🧠 Scenario Planning
+
+Naviguer dans l'incertitude et anticiper les ruptures
+
+Apprenez à identifier les signaux faibles, co-construire des scénarios d'évolution, déduire risques et opportunités, et transformer l'incertitude en atout stratégique.
+
+🤖 Booster sa productivité grâce à l'IA
+
+Cas d'usage concrets, prompts opérationnels, gains immédiats
+
+Formation ultra-pratique (80 % d'exercices) pour intégrer l'IA générative dans vos tâches quotidiennes : création de contenus, prospection, décisions stratégiques. Livrables : back de prompts, modèles. suivi 30 jours.’’’
+
+**Correction à apporter : N’utilise pas d’emoji. Et Non brightness ne propose pas de formations indiv. Les formations proposées sont les bonnes. Mais ce sont des formations collectives.**
+
+**2/ Quelles sont les durées des formations ?**
+
+**l’IA répond** 
+
+“””Bonne question ! 😊
+
+La durée des formations Brightness varie selon le format et vos objectifs. Voici ce que je peux vous préciser :
+
+Formats courants
+
+- Formations individuelles ou collectives classiques
+
+Généralement 1 à 2 jours (soit 7 à 14 heures), en présentiel ou distanciel.
+
+Exemple : L’Art du Talk, Booster sa productivité grâce à l’IA, Improvisation & Agilité collective.
+
+- Masterclass
+
+Format plus court : environ 40 minutes (20 min de présentation + 20 min de Q&A).
+
+- Workshops
+
+Sessions pratiques de moins de 60 minutes, axées sur l’expérimentation et la mise en pratique.
+
+- Serious Games (ex. Future Shock pour le Scenario Planning)
+
+Environ 4 heures par session, pour des groupes de dirigeants ou équipes.”””
+
+**Correction à apporter : “N’utilise pas d’emoji. Et Les workshops ne font pas moins de 60min.  De plus l’IA devrait faire référence aux talks, formats plus courts.”**
+
+**3/  Vos formations sont elles labellisées ?**
+
+**l’IA répond** 
+
+“””
+
+AI — Excellente question ! 😊
+
+Oui, Brightness est un organisme de formation certifié.
+
+Brightness est enregistré comme organisme de formation et répond aux exigences réglementaires françaises en matière de formation professionnelle.
+
+Cela signifie que nos formations :
+
+- ✅ Sont éligibles à une prise en charge par les OPCO, le plan de développement des compétences de votre entreprise, ou d'autres dispositifs de financement de la formation professionnelle.
+- ✅ Respectent les obligations légales :
+    - Règlement intérieur conforme au Code du travail
+    - Accessibilité aux personnes en situation de handicap
+    - Démarche qualité et amélioration continue
+    - Protection des données (RGPD)
+- ✅ Incluent un suivi pédagogique rigoureux :
+    - Questionnaire de positionnement en amont
+    - Évaluations pendant et en fin de formation
+    - Attestation de formation remise à l'issue du parcours
+    - Feuilles d'émargement”””
+
+**Correction à apporter : “Arreter de systematiquement dire Excellent ! N’utilise pas d’emoji. Et L’IA devrait faire référence à qualiopi. “**
+
+**4/ Exemple de requete :  je cherche une formation pour mon codir pour leur ouvrir les chakras et les faire réfléchir aux changements du monde que me proposez vous ?**
+
+L’IA Répond
+
+“””AI — Super demande ! 😊 Ouvrir les perspectives, stimuler la réflexion stratégique et préparer votre Codir aux transformations du monde, c'est exactement le type de défi que Brightness adore relever.
+
+Voici 3 pistes de formats particulièrement adaptés pour un Codir :
+
+1️⃣ Serious Game "Future Shock" – Préparez-vous aux défis à venir
+
+Animé par Michel Levy Provençal & Guy-Philippe Goldstein
+
+Un serious game immersif qui plonge votre Codir dans un scénario de crise prospective (tensions géopolitiques, chocs technologiques, bouleversements environnementaux...). Les participants endossent le rôle de cabinets de conseil et doivent analyser, prioriser, imaginer des solutions innovantes et défendre une stratégie collective.
+
+✅ Bénéfices :
+
+- Naviguer dans l'incertitude et développer l'agilité stratégique
+- Renforcer la créativité sous pression
+- Prendre des décisions robustes dans des environnements instables
+
+🗓️ Format : 1/2 journée (3h30) ou 1 journée (7h)
+
+💰 Budget indicatif : sur demande (dépend du format et du nombre de participants)
+
+2️⃣ Formation "Devenir éclaireur" – Repérer les tendances, préempter les sujets, affirmer sa voix
+
+💡 Bonus : Improvisation & Agilité collective
+
+Animée par Cyrille de Lasteyrie (storyteller & improvisateur)
+
+Pour développer l’écoute active, la réactivité, la capacité à rebondir et à co‑construire : l’improvisation comme levier d’agilité collective et d’innovation sous contrainte.
+
+📅 Format : Formation 1 jour (7h)
+
+🎤 Pour affiner la proposition :
+
+- Combien de personnes dans votre Codir ?
+- Préférence de format : présentiel, distanciel ou hybride ?
+
+👉 Pour finaliser et obtenir un programme détaillé + budget précis, le plus simple est de nous contacter via [brightness.fr/contact](http://brightness.fr/contact) — nous vous répondons rapidement et co‑construisons avec vous le format le plus impactant !
+
+!🚀
+
+”””
+
+**Correction à apporter : “Arreter de systematiquement demarrer avec des encouragements niais ! N’utilise pas d’emoji. Et elle devrait par exemple proposer Asma Mhalla dont le programme est au coeur du sujet….”**
