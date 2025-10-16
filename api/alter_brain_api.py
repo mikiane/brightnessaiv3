@@ -88,7 +88,7 @@ def handle_req():
     if index.startswith("http://") or index.startswith("https://"):
         url = index
         index_filename= "datas/" + lib__embedded_context.build_index_url(url) + "/emb_index.csv"
-    context = lib__embedded_context.find_context(text, index_filename, n_results=10)
+    context = lib__embedded_context.find_context(text, index_filename, n_results=5)
     res = [{'id':1,'request':'searchcontext','answer':context}]
     response = jsonify(res)
     response.headers['Content-Type'] = 'application/json'
