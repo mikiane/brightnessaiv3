@@ -121,7 +121,35 @@ def stream_chat_temp():
     consigne = unquote(consigne)
     texte = unquote(texte)
     logger.info(f"CHAT: model={model}, temperature={temperature}")
-    return Response(llm_manager.generate_chat(consigne, texte, system, model, temperature), content_type='text/plain')
+    
+    # Récupérer l'IP du client
+    client_ip = request.remote_addr or request.environ.get('HTTP_X_FORWARDED_FOR', 'Unknown')
+    
+    # Préparer les données de requête pour le log
+    request_data = {
+        'consigne': consigne,
+        'texte': texte,
+        'system': system,
+        'model': model,
+        'temperature': temperature
+    }
+    
+    # Générer la réponse et la capturer
+    response_generator = llm_manager.generate_chat(consigne, texte, system, model, temperature)
+    
+    # Capturer la réponse complète pour le logging
+    full_response = ""
+    
+    def generate_and_log():
+        nonlocal full_response
+        for chunk in response_generator:
+            full_response += chunk
+            yield chunk
+        
+        # Logger après la génération complète
+        log_to_file(client_ip, request_data, full_response)
+    
+    return Response(generate_and_log(), content_type='text/plain')
 
 if __name__ == '__main__':
     app.run(debug=True)
