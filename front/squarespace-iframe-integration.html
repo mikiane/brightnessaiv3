@@ -36,3 +36,43 @@ Pour changer la hauteur, modifiez : height: 600px;
 
 =================================================================
 -->
+
+
+
+
+<!-- Popup Chatbot en bas à droite, affiché OUVERT -->
+
+<div id="chatbot-popup" style="position:fixed;bottom:24px;right:24px;z-index:9999;width:350px;height:530px;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.25);display:block;">
+  <iframe src="https://dev.brightness-agency.com/avatar/?index=brightness" width="100%" height="100%" style="border:none;border-radius:12px;"></iframe>
+  <span id="close-chatbot" style="position:absolute;top:8px;right:14px;cursor:pointer;font-size:22px;">×</span>
+</div>
+<script>
+  document.getElementById('close-chatbot').onclick = function() {
+    document.getElementById('chatbot-popup').style.display = 'none';
+  };
+</script>
+<!-- Fin de script -->
+
+<!-- Popup Chatbot en bas à droite, affiché OUVERT -->
+
+<div id="chatbot-popup" style="position:fixed;bottom:24px;right:24px;z-index:9999;width:350px;height:530px;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.25);display:block;">
+  <iframe src="https://dev.brightness-agency.com/avatar/?index=brightness" width="100%" height="100%" style="border:none;border-radius:12px;"></iframe>
+  <span id="close-chatbot" style="position:absolute;top:8px;right:8px;cursor:pointer;font-size:18px;width:32px;height:32px;background:#2c2c2c;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;transition:background 0.3s ease;">×</span>
+</div>
+<script>
+  const closeBtn = document.getElementById('close-chatbot');
+  
+  closeBtn.onclick = function() {
+    document.getElementById('chatbot-popup').style.display = 'none';
+  };
+  
+  // Effet hover
+  closeBtn.onmouseover = function() {
+    this.style.background = '#000';
+  };
+  
+  closeBtn.onmouseout = function() {
+    this.style.background = '#2c2c2c';
+  };
+</script>
+<!-- Fin de script -->
