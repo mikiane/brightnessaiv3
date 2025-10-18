@@ -154,7 +154,7 @@
           acc+=t; 
           const html=DOMPurify.sanitize(marked.parse(acc)); 
           textEl.innerHTML=html; 
-          if(atBottom(els.chat)) autoScroll(); 
+          autoScroll(); 
         } 
       }
       
