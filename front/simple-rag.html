@@ -82,7 +82,7 @@
     if(!cfg.apiUrl) els.status.textContent='Configuration manquante: apiUrl'; if(!cfg.searchUrl) els.status.textContent='Configuration manquante: searchUrl'; if(!cfg.brain_id) els.status.textContent='Configuration manquante: brain_id';
   }
 
-  function atBottom(c,t=40){ return c.scrollHeight-c.scrollTop-c.clientHeight<t; }
+  function atBottom(c,t=150){ return c.scrollHeight-c.scrollTop-c.clientHeight<t; }
   function autoScroll(){ els.chat.scrollTop=els.chat.scrollHeight; }
   function $(tag, attrs={}, text=''){ const n=document.createElement(tag); Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v)); if(text) n.textContent=text; return n; }
   function renderMessage(role, content){
