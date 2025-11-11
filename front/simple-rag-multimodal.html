@@ -124,8 +124,9 @@
 
   function extractEntities(text){
     const entities=[];
+    const excludeWords=['flux','voir','avoir','être','faire','dire','fois','gens','monde','temps','jour','chose','point','organisation','chorégraphie','atmosphère','aspect','exemple','endroit','côté','visage','époque'];
     const properNouns=text.match(/\b[A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜ][a-zàâäéèêëïîôöùûüç]+(?:\s+[A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜ][a-zàâäéèêëïîôöùûüç]+)*\b/g)||[];
-    const geoKeywords=['ville','pays','région','capitale','monument','cathédrale','musée','parc','place','quartier','île','montagne','océan','mer'];
+    const geoKeywords=['ville','pays','région','capitale','monument','cathédrale','musée','parc','quartier','île','montagne','océan','mer','carrefour','district','temple','sanctuaire','palais','gare','station','ruelle','allée','statue'];
     const locationMatches=geoKeywords.flatMap(kw=>{
       const regex=new RegExp(`\\b${kw}\\s+(?:d[eu]\\s+)?([A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜ][a-zàâäéèêëïîôöùûüç]+(?:\\s+[A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜ][a-zàâäéèêëïîôöùûüç]+)?)`,'gi');
       return[...text.matchAll(regex)].map(m=>m[1]);
@@ -135,8 +136,15 @@
       const regex=new RegExp(`\\b${kw}\\s+([A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜ][a-zàâäéèêëïîôöùûüç]+(?:\\s+[A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜ][a-zàâäéèêëïîôöùûüç]+)?)`,'gi');
       return[...text.matchAll(regex)].map(m=>m[1]);
     });
-    entities.push(...locationMatches,...brandMatches,...properNouns.slice(0,3));
-    return[...new Set(entities.filter(e=>e&&e.length>2))].slice(0,3);
+    entities.push(...locationMatches,...brandMatches,...properNouns);
+    const filtered=entities.filter(e=>{
+      if(!e||e.length<3)return false;
+      const lower=e.toLowerCase();
+      if(excludeWords.includes(lower))return false;
+      if(/^d[eu]\s+/i.test(e))return false;
+      return/^[A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜ]/.test(e);
+    });
+    return[...new Set(filtered)].slice(0,5);
   }
 
   async function searchUnsplashImages(query,perPage=4){
@@ -157,11 +165,16 @@
 
   async function enrichWithImages(responseText,userQuestion){
     if(!cfg.enableImageSearch||!cfg.unsplashAccessKey)return null;
-    const fullText=userQuestion+' '+responseText;
-    const entities=extractEntities(fullText);
-    console.log('🔍 Entités détectées:',entities);
-    if(entities.length===0){const images=await searchUnsplashImages(userQuestion,2);return images.length>0?images:null;}
-    const imagePromises=entities.map(entity=>searchUnsplashImages(entity,2));
+    const questionEntities=extractEntities(userQuestion);
+    const responseEntities=extractEntities(responseText);
+    console.log('🔍 Entités question:',questionEntities);
+    console.log('🔍 Entités réponse:',responseEntities);
+    const prioritizedEntities=[...questionEntities,...responseEntities.slice(0,2)];
+    const uniqueEntities=[...new Set(prioritizedEntities)].slice(0,Math.min(cfg.maxImages||4,3));
+    console.log('✅ Entités finales pour recherche:',uniqueEntities);
+    if(uniqueEntities.length===0){const images=await searchUnsplashImages(userQuestion,2);return images.length>0?images:null;}
+    const imagesPerEntity=Math.max(1,Math.floor((cfg.maxImages||4)/uniqueEntities.length));
+    const imagePromises=uniqueEntities.map(entity=>searchUnsplashImages(entity,imagesPerEntity));
     const imageResults=await Promise.all(imagePromises);
     const allImages=imageResults.flat().slice(0,cfg.maxImages||4);
     return allImages.length>0?allImages:null;
