@@ -86,7 +86,7 @@
   const els = { logo:document.getElementById('logo'), title:document.getElementById('title'), chat:document.getElementById('chat'), input:document.getElementById('input'), send:document.getElementById('send'), stop:document.getElementById('stop'), status:document.getElementById('status') };
   let abortController = null;
 
-  let cfg = { title:'Chat RAG', logoUrl:'', apiUrl:'', searchUrl:'', apiKey:'', brain_id:'', model:'', temperature:0, withHistory:true, system:'', consigne:'', activate_source:false, initialisation:'', unsplashAccessKey:'', enableImageSearch:true, maxImages:4, knownPlaces:[], knownMonuments:[] };
+  let cfg = { title:'Chat RAG', logoUrl:'', apiUrl:'', searchUrl:'', apiKey:'', brain_id:'', model:'', temperature:0, withHistory:true, system:'', consigne:'', activate_source:false, initialisation:'', unsplashAccessKey:'', enableImageSearch:true, maxImages:4, knownPlaces:[], knownMonuments:[], entityTranslations:{} };
 
   async function loadConfig(){
     const params=new URLSearchParams(window.location.search); const idx=params.get('index'); let cfgFile='chat-config.json';
@@ -179,9 +179,21 @@
     return result;
   }
 
+  function translateEntityForUnsplash(entity){
+    if(!entity)return entity;
+    if(cfg.entityTranslations&&cfg.entityTranslations[entity]){
+      const translated=cfg.entityTranslations[entity];
+      console.log(`🌐 Traduction: "${entity}" → "${translated}"`);
+      return translated;
+    }
+    return entity;
+  }
+
   async function searchUnsplashImages(query,perPage=4){
     if(!cfg.unsplashAccessKey){console.warn('Clé Unsplash non configurée');return[];}
-    const url=`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=landscape&client_id=${cfg.unsplashAccessKey}`;
+    const translatedQuery=translateEntityForUnsplash(query);
+    const url=`https://api.unsplash.com/search/photos?query=${encodeURIComponent(translatedQuery)}&per_page=${perPage}&orientation=landscape&client_id=${cfg.unsplashAccessKey}`;
+    console.log(`🔎 Recherche Unsplash: "${translatedQuery}"`);
     try{
       const response=await fetch(url);
       if(!response.ok){console.error('Unsplash API error:',response.status);return[];}
