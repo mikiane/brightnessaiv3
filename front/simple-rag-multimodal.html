@@ -295,12 +295,6 @@
       
       history.push({role:'assistant', content:textEl.textContent});
       
-      // Gestion des images inline (erreurs de chargement)
-      setupImageErrorHandling(textEl);
-      
-      // Transformation des liens en cards avec preview
-      await enrichWithLinkCards(textEl);
-      
       if (cfg.activate_source) {
         const histText=history.slice(-5,-1).map(m=>`- ${m.role}: ${m.content}`).join('\n');
         contentEl.appendChild(createSourceBlock(context, histText));
@@ -310,12 +304,18 @@
       try{ typing.remove(); }catch(err){}
       textEl.textContent=(textEl.textContent||'')+`\n[Erreur] ${e.message||e}`; 
     }finally{
-      // Débloque l'interface
+      // Débloque l'interface IMMÉDIATEMENT après le streaming
       els.send.disabled = false; 
       els.input.disabled = false; 
       els.stop.classList.add('hidden'); 
       els.status.textContent = ''; 
       abortController = null;
+      
+      // Lancer l'enrichissement visuel en arrière-plan (non bloquant)
+      setTimeout(()=>{
+        setupImageErrorHandling(textEl);
+        enrichWithLinkCards(textEl).catch(err=>console.warn('Erreur enrichissement:',err));
+      },0);
     }
   }
 
