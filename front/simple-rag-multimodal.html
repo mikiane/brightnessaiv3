@@ -46,8 +46,9 @@
     .typing .dot:nth-child(3){animation-delay:.4s}
     @keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
     /* Images inline fournies par le LLM */
-    .content.md img{max-width:100%;height:auto;border-radius:8px;margin:12px 0;box-shadow:var(--shadow);border:1px solid var(--muted);display:block}
-    .content.md img:hover{border-color:var(--accent);transition:border-color .2s ease}
+    .content.md img{max-width:100%;height:auto;border-radius:8px;margin:12px 0;box-shadow:var(--shadow);border:1px solid var(--muted);display:none;opacity:0;transition:opacity .3s ease}
+    .content.md img.loaded{display:block;opacity:1}
+    .content.md img:hover{border-color:var(--accent)}
     /* Cards pour les liens externes */
     .link-card{display:block;margin:12px 0;border:1px solid var(--muted);border-radius:8px;overflow:hidden;background:var(--panel);text-decoration:none;transition:all .2s ease;cursor:pointer}
     .link-card:hover{border-color:var(--accent);box-shadow:var(--shadow);transform:translateY(-2px)}
@@ -120,9 +121,26 @@
   // ============================================
 
   function setupImageErrorHandling(container){
-    const images=container.querySelectorAll('img');
+    const images=container.querySelectorAll('img:not([data-handled])');
     images.forEach(img=>{
+      img.setAttribute('data-handled','true');
       img.loading='lazy';
+      const isAlreadyLoaded=img.complete&&img.naturalHeight!==0;
+      if(isAlreadyLoaded){
+        img.classList.add('loaded');
+        console.log(`✅ Image déjà chargée: ${img.src}`);
+        return;
+      }
+      const isAlreadyError=img.complete&&img.naturalHeight===0;
+      if(isAlreadyError){
+        console.warn(`❌ Image déjà en erreur, suppression: ${img.src}`);
+        const parent=img.parentElement;
+        img.remove();
+        if(parent&&parent.childNodes.length===0&&parent.tagName==='P'){
+          parent.remove();
+        }
+        return;
+      }
       img.onerror=()=>{
         console.warn(`❌ Image cassée, suppression: ${img.src}`);
         const parent=img.parentElement;
@@ -133,6 +151,7 @@
       };
       img.onload=()=>{
         console.log(`✅ Image chargée: ${img.src}`);
+        img.classList.add('loaded');
         if(atBottom(els.chat))autoScroll();
       };
     });
@@ -289,6 +308,7 @@
           acc+=t; 
           const html=DOMPurify.sanitize(marked.parse(acc)); 
           textEl.innerHTML=html; 
+          setupImageErrorHandling(textEl);
           if(atBottom(els.chat)) autoScroll(); 
         } 
       }
@@ -311,10 +331,9 @@
       els.status.textContent = ''; 
       abortController = null;
       
-      // Lancer l'enrichissement visuel en arrière-plan (non bloquant)
+      // Lancer l'enrichissement des link cards en arrière-plan (non bloquant)
       setTimeout(()=>{
-        setupImageErrorHandling(textEl);
-        enrichWithLinkCards(textEl).catch(err=>console.warn('Erreur enrichissement:',err));
+        enrichWithLinkCards(textEl).catch(err=>console.warn('Erreur enrichissement link cards:',err));
       },0);
     }
   }
