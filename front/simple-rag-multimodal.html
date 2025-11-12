@@ -124,8 +124,12 @@
     images.forEach(img=>{
       img.loading='lazy';
       img.onerror=()=>{
-        console.warn(`❌ Image cassée: ${img.src}`);
-        img.style.display='none';
+        console.warn(`❌ Image cassée, suppression: ${img.src}`);
+        const parent=img.parentElement;
+        img.remove();
+        if(parent&&parent.childNodes.length===0&&parent.tagName==='P'){
+          parent.remove();
+        }
       };
       img.onload=()=>{
         console.log(`✅ Image chargée: ${img.src}`);
@@ -143,18 +147,33 @@
 
   async function fetchLinkMetadata(url){
     try{
-      const response=await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`);
-      if(!response.ok)return null;
+      const response=await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`,{
+        timeout:5000
+      });
+      if(!response.ok){
+        console.warn(`❌ Échec récupération métadonnées (${response.status}): ${url}`);
+        return null;
+      }
       const data=await response.json();
+      if(!data.status||data.status==='error'||!data.data){
+        console.warn(`❌ Métadonnées invalides: ${url}`);
+        return null;
+      }
+      const title=data.data?.title;
+      const image=data.data?.image?.url;
+      if(!title||title.length<3){
+        console.warn(`❌ Titre invalide: ${url}`);
+        return null;
+      }
       return{
-        title:data.data?.title||new URL(url).hostname,
-        image:data.data?.image?.url||null,
+        title:title,
+        image:image||null,
         description:data.data?.description||'',
         url:url
       };
     }catch(error){
-      console.warn(`Impossible de récupérer les métadonnées pour ${url}:`,error);
-      return{title:new URL(url).hostname,image:null,description:'',url};
+      console.warn(`❌ Erreur réseau pour ${url}:`,error);
+      return null;
     }
   }
 
@@ -165,37 +184,36 @@
     card.target='_blank';
     card.rel='noopener noreferrer';
     if(metadata.image){
-      const imageDiv=document.createElement('div');
-      imageDiv.className='link-card-image';
-      imageDiv.style.backgroundImage=`url('${metadata.image}')`;
-      imageDiv.style.backgroundSize='cover';
-      imageDiv.style.backgroundPosition='center';
-      const titleOverlay=document.createElement('div');
-      titleOverlay.className='link-card-title';
-      titleOverlay.textContent=metadata.title;
-      imageDiv.appendChild(titleOverlay);
-      card.appendChild(imageDiv);
-    }else{
-      const body=document.createElement('div');
-      body.className='link-card-body';
-      const title=document.createElement('div');
-      title.style.fontWeight='600';
-      title.style.marginBottom='4px';
-      title.textContent=metadata.title;
-      body.appendChild(title);
-      card.appendChild(body);
+      const testImg=new Image();
+      testImg.onload=()=>{
+        const imageDiv=document.createElement('div');
+        imageDiv.className='link-card-image';
+        imageDiv.style.backgroundImage=`url('${metadata.image}')`;
+        imageDiv.style.backgroundSize='cover';
+        imageDiv.style.backgroundPosition='center';
+        const titleOverlay=document.createElement('div');
+        titleOverlay.className='link-card-title';
+        titleOverlay.textContent=metadata.title;
+        imageDiv.appendChild(titleOverlay);
+        card.insertBefore(imageDiv,card.firstChild);
+      };
+      testImg.onerror=()=>{
+        console.warn(`❌ Image de card cassée: ${metadata.image}`);
+      };
+      testImg.src=metadata.image;
     }
+    const body=document.createElement('div');
+    body.className='link-card-body';
+    const title=document.createElement('div');
+    title.style.fontWeight='600';
+    title.style.marginBottom='4px';
+    title.textContent=metadata.title;
+    body.appendChild(title);
     const urlDiv=document.createElement('div');
     urlDiv.className='link-card-url';
     urlDiv.textContent=metadata.url;
-    if(card.querySelector('.link-card-body')){
-      card.querySelector('.link-card-body').appendChild(urlDiv);
-    }else{
-      const body=document.createElement('div');
-      body.className='link-card-body';
-      body.appendChild(urlDiv);
-      card.appendChild(body);
-    }
+    body.appendChild(urlDiv);
+    card.appendChild(body);
     return card;
   }
 
@@ -204,11 +222,20 @@
     for(const link of links){
       const url=link.href;
       if(/\.(?:jpg|jpeg|png|gif|webp|svg)(?:\?[^\s]*)?$/i.test(url))continue;
-      console.log(`🔗 Création d'une card pour: ${url}`);
-      const metadata=await fetchLinkMetadata(url);
-      const card=createLinkCard(metadata);
-      link.parentNode.replaceChild(card,link);
-      if(atBottom(els.chat))autoScroll();
+      console.log(`🔗 Tentative de création d'une card pour: ${url}`);
+      try{
+        const metadata=await fetchLinkMetadata(url);
+        if(!metadata){
+          console.log(`⚠️ Pas de métadonnées, lien normal conservé: ${url}`);
+          continue;
+        }
+        const card=createLinkCard(metadata);
+        link.parentNode.replaceChild(card,link);
+        console.log(`✅ Card créée pour: ${url}`);
+        if(atBottom(els.chat))autoScroll();
+      }catch(error){
+        console.warn(`❌ Erreur création card pour ${url}:`,error);
+      }
     }
   }
 
@@ -304,112 +331,6 @@
   });
   els.input.addEventListener('keydown', e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); handleSend(); } });
 
-  // Intercepter les clics sur les liens Brightness Contact
-  function setupBrightnessLinks() {
-    console.log('🔧 Setup Brightness Links activé');
-    
-    // Vérifier que l'élément chat existe
-    if (!els.chat) {
-      console.error('❌ Element chat non trouvé!');
-      return;
-    }
-    
-    els.chat.addEventListener('click', (e) => {
-      console.log('🖱️ Clic détecté dans le chat');
-      
-      // Vérifier si c'est un lien
-      const link = e.target.closest('a');
-      if (!link) {
-        console.log('❌ Pas un lien');
-        return;
-      }
-      
-      // Vérifier si c'est le lien Brightness Contact
-      const href = link.getAttribute('href') || link.href;
-      console.log('🔗 Lien cliqué:', href);
-      
-      // Détection plus flexible de l'URL Brightness
-      const isBrightnessContact = href && (
-        href.includes('brightness-institute.fr/contact') ||
-        href.includes('brightness.fr/contact') ||
-        href === '/contact'
-      );
-      
-      if (isBrightnessContact) {
-        console.log('✅ Lien Brightness détecté!');
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Vérifier qu'il y a une conversation
-        if (history.length === 0) {
-          console.log('⚠️ Historique vide');
-          window.open(href, '_blank');
-          return;
-        }
-        
-        console.log('📝 Historique:', history.length, 'messages');
-        
-        // Formatter la conversation
-        const dateStr = new Date().toLocaleString('fr-FR', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric', 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        });
-        
-        // D'abord, construire la conversation COMPLÈTE
-        const fullConversation = `Conversation du ${dateStr}\n\n` +
-          history.map(m => {
-            const role = m.role === 'user' ? '👤 Client' : '🤖 Assistant';
-            return `${role}:\n${m.content}`;
-          }).join('\n\n─────────────────\n\n');
-        
-        console.log('📊 Conversation complète:', fullConversation.length, 'caractères');
-        
-        // Encoder la conversation complète
-        const encodedFull = encodeURIComponent(fullConversation);
-        console.log('📊 Longueur encodée:', encodedFull.length, 'caractères');
-        
-        // S'assurer que l'URL est complète
-        let fullUrl = href;
-        if (href === '/contact' || !href.startsWith('http')) {
-          fullUrl = 'https://www.brightness-institute.fr/contact';
-        }
-        
-        // Toujours utiliser l'URL (limite très haute)
-        if (encodedFull.length < 20000) {
-          // MÉTHODE URL : Fonctionne pour presque toutes les conversations
-          const finalUrl = `${fullUrl}?conversation=${encodedFull}`;
-          console.log('🌐 Méthode URL - Conversation COMPLÈTE (' + fullConversation.length + ' car., encodé: ' + encodedFull.length + ')');
-          els.status.textContent = 'Ouverture du formulaire avec votre conversation complète...';
-          window.open(finalUrl, '_blank');
-        } else {
-          // Si vraiment TROP long (très rare)
-          console.warn('⚠️ Conversation exceptionnellement longue (' + encodedFull.length + ' car. encodés)');
-          const confirmation = confirm('Votre conversation est très longue. Voulez-vous l\'envoyer tronquée (derniers messages) ?');
-          
-          if (confirmation) {
-            // Tronquer intelligemment en gardant les 15 derniers messages
-            const recentHistory = history.slice(-15);
-            const truncated = `Conversation du ${dateStr}\n\n[Les 15 derniers messages sur ${history.length} au total]\n\n─────────────────\n\n` +
-              recentHistory.map(m => {
-                const role = m.role === 'user' ? '👤 Client' : '🤖 Assistant';
-                return `${role}:\n${m.content}`;
-              }).join('\n\n─────────────────\n\n');
-            
-            const encodedTrunc = encodeURIComponent(truncated);
-            const finalUrl = `${fullUrl}?conversation=${encodedTrunc}`;
-            console.log('🌐 Version tronquée envoyée (15 derniers messages)');
-            window.open(finalUrl, '_blank');
-          }
-          els.status.textContent = '';
-        }
-        
-        setTimeout(() => els.status.textContent = '', 3000);
-      }
-    });
-  }
 
   async function init(){
     await loadConfig();
@@ -419,10 +340,6 @@
       textEl.innerHTML=html;
       history.push({role:'assistant', content:cfg.initialisation});
     }
-    // Appeler setupBrightnessLinks après que tout soit chargé
-    setTimeout(() => {
-      setupBrightnessLinks();
-    }, 100);
   }
   
   init();
