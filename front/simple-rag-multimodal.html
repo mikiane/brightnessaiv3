@@ -12,9 +12,9 @@
     header img{height:28px}
     main{flex:1; display:flex; flex-direction:column; max-width:900px; margin:0 auto; width:100%; overflow:hidden; padding-bottom:140px}
     .chat{flex:1; padding:14px; overflow-y:auto; overflow-x:hidden}
-    .msg{display:flex; gap:10px; margin:10px 0}
-    .role{width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff}
-    .role.user{background:#3A3F46}
+    .msg{display:flex; gap:14px; margin:14px 0; align-items:flex-start}
+    .role{width:12px; height:12px; min-width:12px; border-radius:999px; margin-top:6px; flex-shrink:0}
+    .role.user{background:#6B7280}
     .role.assistant{background:var(--accent)}
     .content{max-width:100%}
     .content.user{white-space:pre-wrap}
@@ -99,7 +99,7 @@
   function $(tag, attrs={}, text=''){ const n=document.createElement(tag); Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v)); if(text) n.textContent=text; return n; }
   function renderMessage(role, content){
     const container=$('div',{class:'msg'});
-    const roleEl=$('div',{class:'role '+(role==='assistant'?'assistant':'user')}); roleEl.textContent=role==='assistant'?'AI':'Vous';
+    const roleEl=$('div',{class:'role '+(role==='assistant'?'assistant':'user')});
     const contentEl=$('div');
     const textEl=$('div',{class:'content '+(role==='assistant'?'md':'user')}); if(role==='assistant') textEl.innerHTML=''; else textEl.textContent=content||'';
     contentEl.appendChild(textEl);
